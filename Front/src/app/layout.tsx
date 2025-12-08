@@ -5,6 +5,7 @@ import Footer from "../components/Footer";
 import { CartProvider } from "../context/CartContext"; 
 import CartSidebar from "../components/CartSidebar";
 import { WishlistProvider } from "../context/WishlistContext";
+import { AuthProvider } from "../context/AuthContext";
 import "./globals.css";
 
 // ... (Fuentes y metadata siguen igual) ...
@@ -34,6 +35,7 @@ export default function RootLayout({
     <html lang="es">
       <body className={`${playfair.variable} ${lato.variable} font-sans antialiased`}>
         {/* ENVOLVEMOS TODO CON EL CART PROVIDER */}
+        <AuthProvider>
         <CartProvider>
           <WishlistProvider> {/* <--- NUEVO ENVOLTORIO */}
           <Navbar />
@@ -42,6 +44,7 @@ export default function RootLayout({
           <Footer />
           </WishlistProvider>
         </CartProvider>
+        </AuthProvider>
       </body>
     </html>
   );

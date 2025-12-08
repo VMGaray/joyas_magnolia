@@ -66,5 +66,12 @@ export function adaptBackendProduct(backendProduct: BackendProduct): FrontendPro
 
 // Adapta un array de productos
 export function adaptBackendProducts(backendProducts: BackendProduct[]): FrontendProduct[] {
+  // 🛡️ PROTECCIÓN: Si no es un array, devolvemos lista vacía y no rompemos la app
+  if (!backendProducts || !Array.isArray(backendProducts)) {
+    console.error("🚨 Error en adaptador: Se esperaba un array pero llegó:", backendProducts);
+    return []; 
+  }
+
+  // Si todo está bien, hacemos el mapa
   return backendProducts.map(adaptBackendProduct);
 }

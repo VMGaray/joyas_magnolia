@@ -4,9 +4,12 @@ import Link from "next/link";
 import { Mail, Lock, ArrowRight, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext"; // <--- 1. IMPORTAMOS EL CONTEXTO
 
 export const LoginForm = () => {
   const router = useRouter();
+  const { login } = useAuth(); // <--- 2. TRAEMOS LA FUNCIÓN LOGIN
+  
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -34,27 +37,36 @@ export const LoginForm = () => {
         body: JSON.stringify(formData),
       });
 
-      const data = await response.json();
+      // Lógica "Todoterreno" para leer el token (Texto o JSON)
+      const responseText = await response.text();
+      let data;
+      let token;
+
+      try {
+        data = JSON.parse(responseText);
+        token = data.token || data.access_token;
+      } catch (error) {
+        token = responseText;
+      }
 
       if (!response.ok) {
-        throw new Error(data.message || "Credenciales inválidas");
+        throw new Error(data?.message || "Credenciales inválidas");
       }
 
-      // --- ¡ÉXITO! ---
-      // 1. Guardamos el Token en localStorage (es como el carnet de socio)
-      localStorage.setItem("token", data.token); // Ajusta si tu back devuelve 'access_token'
+      if (!token) {
+        throw new Error("No se recibió el token de seguridad");
+      }
+
+      // --- 3. AQUÍ ESTÁ EL CAMBIO IMPORTANTE ---
+      // Usamos la función del contexto. Ella se encarga de guardar en localStorage
+      // y de avisarle al Navbar que cambie de color.
+      login(token.replace(/^"|"$/g, ''), data?.user); 
       
-      // 2. (Opcional) Si el back devuelve datos del usuario, guárdalos también
-      if (data.user) {
-        localStorage.setItem("user", JSON.stringify(data.user));
-      }
-
-      // 3. Avisamos y redirigimos al Home
-      // alert("¡Bienvenida de nuevo!"); // Opcional, a veces molesta
-      router.push("/"); 
-      // router.refresh(); // Útil para actualizar el Navbar y que cambie el ícono
+      // Redirigimos rápido sin recargar la página
+      router.push("/");
 
     } catch (err: any) {
+      console.error(err);
       setError(err.message);
     } finally {
       setLoading(false);
