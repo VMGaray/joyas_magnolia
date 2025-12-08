@@ -17,6 +17,9 @@ export class Product {
   @Column('decimal')
   price: number;
 
+  @Column()
+  isFeatured: boolean;
+
   @Column({ nullable: true })
   imageUrl: string;
 
