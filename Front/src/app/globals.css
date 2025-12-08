@@ -1,0 +1,21 @@
+@import "tailwindcss";
+
+@import "tailwindcss";
+
+@theme {
+  /* Tipografías conectadas a lo que definimos en layout.tsx */
+  --font-serif: var(--font-playfair);
+  --font-sans: var(--font-lato);
+
+  /* Paleta de Colores Magnolia (sacada de tu imagen) */
+  --color-magnolia-lilac: #D8C8D9;   /* El color del botón Shop Now */
+  --color-magnolia-green: #C6D8C8;   /* El verde suave de las categorías */
+  --color-magnolia-dark: #333333;    /* Texto oscuro elegante */
+  --color-magnolia-light: #F9F9F9;   /* Fondo casi blanco */
+}
+
+/* Estilos base */
+body {
+  background-color: var(--color-magnolia-light);
+  color: var(--color-magnolia-dark);
+}
