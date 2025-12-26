@@ -7,10 +7,12 @@ import { Product } from './entities/product.entity';
 import { Category } from './entities/category.entity';
 import { ProductType } from './entities/product-type.entity';
 import { Subtype } from './entities/subtype.entity';
+import { UploadImageModule } from 'src/image-upload/image-upload.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Product, Category, ProductType, Subtype]),
+    UploadImageModule,
   ],
   controllers: [ProductsController],
   providers: [ProductsService],

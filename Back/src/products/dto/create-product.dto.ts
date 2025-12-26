@@ -45,4 +45,12 @@ export class CreateProductDto {
     required: false,
   })
   subtypeId?: number;
+
+  @ApiProperty({
+    type: 'string',
+    format: 'binary',
+    description: 'Archivo de imagen del producto',
+    required: false,
+  })
+  file?: any;
 }

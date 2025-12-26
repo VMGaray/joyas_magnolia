@@ -3,6 +3,7 @@
 import { registerAs } from '@nestjs/config';
 import { configDotenv } from 'dotenv';
 import { DataSource, DataSourceOptions } from 'typeorm';
+import { join } from 'path';
 
 configDotenv({ path: '.env' });
 
@@ -13,10 +14,11 @@ const config = {
   username: process.env.DB_USERNAME || 'postgres',
   password: process.env.DB_PASSWORD || 'password',
   database: process.env.DB_NAME || 'aidi_db',
-  synchronize: true,
+  synchronize: false,
   logging: ['error'],
-  entities: ['dist/**/*.entity{.ts,.js}'],
-  migrations: ['dist/migrations/*{.ts,.js}'],
+  dropSchema: false,
+  entities: [join(__dirname, '/../**/*.entity{.ts,.js}')],
+  migrations: [join(__dirname, '/../migrations/*{.ts,.js}')],
   extra: {
     ssl:
       process.env.NODE_ENV === 'production'

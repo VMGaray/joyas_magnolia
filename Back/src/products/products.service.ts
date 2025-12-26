@@ -11,6 +11,7 @@ import { ProductType } from './entities/product-type.entity';
 import { Subtype } from './entities/subtype.entity';
 import { CreateProductDto } from './dto/create-product.dto';
 import { FilterProductsDto } from './dto/filter-products.dto';
+import { FileUploadService } from 'src/image-upload/image-upload.service';
 
 @Injectable()
 export class ProductsService {
@@ -23,9 +24,10 @@ export class ProductsService {
     private productTypeRepository: Repository<ProductType>,
     @InjectRepository(Subtype)
     private subtypeRepository: Repository<Subtype>,
+    private readonly fileUploadService: FileUploadService,
   ) {}
 
-  async create(createProductDto: CreateProductDto) {
+  async create(createProductDto: CreateProductDto, file?: Express.Multer.File) {
     const { categoryId, productTypeId, subtypeId, ...productData } =
       createProductDto;
 
@@ -77,8 +79,17 @@ export class ProductsService {
       );
     }
 
+    // Subir imagen si se proporciona un archivo
+    let imageUrl = productData.imageUrl;
+    if (file) {
+      imageUrl = await this.fileUploadService.uploadImage(file, 'products');
+    }
+
     // Crear el producto
-    const product = this.productRepository.create(productData);
+    const product = this.productRepository.create({
+      ...productData,
+      imageUrl,
+    });
     product.category = category;
     product.productType = productType;
     if (subtype) {
@@ -574,5 +585,53 @@ export class ProductsService {
       message: `Seed de productos completado. ${createdProducts.length} productos creados.`,
       products: createdProducts,
     };
+  }
+
+  async uploadImageProduct(
+    file: Express.Multer.File,
+    idProduct: string,
+    folder?: string,
+  ) {
+    const productFound: Product | null = await this.productRepository.findOne({
+      where: { id: idProduct },
+    });
+
+    if (!productFound) {
+      throw new NotFoundException(`Producto con ID ${idProduct} no encontrado`);
+    }
+    const imgUrl = await this.fileUploadService.uploadImage(file, folder);
+
+    productFound.imageUrl = imgUrl;
+    return await this.productRepository.save(productFound);
+  }
+
+  async deleteImageProduct(idProduct: string, imgUrl: string) {
+    const productFound: Product | null = await this.productRepository.findOne({
+      where: { id: idProduct },
+    });
+    if (!productFound) {
+      throw new NotFoundException(`Producto con ID ${idProduct} no encontrado`);
+    }
+
+    await this.fileUploadService.deleteImageByUrl(imgUrl);
+
+    productFound.imageUrl = null;
+    return await this.productRepository.save(productFound);
+  }
+
+  async deleteProduct(idProduct: string) {
+    const productFound: Product | null = await this.productRepository.findOne({
+      where: { id: idProduct },
+    });
+    if (!productFound) {
+      throw new NotFoundException(`Producto con ID ${idProduct} no encontrado`);
+    }
+
+    const imageUrl = productFound.imageUrl;
+    if (imageUrl) {
+      await this.fileUploadService.deleteImageByUrl(imageUrl);
+    }
+
+    return await this.productRepository.remove(productFound);
   }
 }

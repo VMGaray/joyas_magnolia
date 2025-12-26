@@ -5,8 +5,8 @@ import { Subtype } from './subtype.entity';
 
 @Entity()
 export class Product {
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
   @Column()
   name: string;
@@ -17,11 +17,11 @@ export class Product {
   @Column('decimal')
   price: number;
 
-  @Column()
+  @Column({nullable: true})
   isFeatured: boolean;
 
-  @Column({ nullable: true })
-  imageUrl: string;
+  @Column({ type: 'text', nullable: true })
+  imageUrl: string | null;
 
   @ManyToOne(() => Category, (category) => category.products)
   category: Category;

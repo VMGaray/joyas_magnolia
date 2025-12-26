@@ -8,6 +8,8 @@ import typeOrmConfig from './config/typeorm.config';
 import { ProductsModule } from './products/products.module';
 import { AuthModule } from './auth/auth.module';
 import { JwtModule } from '@nestjs/jwt';
+import { UploadImageModule } from './image-upload/image-upload.module';
+import { MercadoPagoModule } from './mercado-pago/mercado-pago.module';
 
 @Module({
   imports: [
@@ -37,6 +39,8 @@ import { JwtModule } from '@nestjs/jwt';
     }),
     ProductsModule,
     AuthModule,
+    UploadImageModule,
+    MercadoPagoModule,
   ],
   controllers: [],
   providers: [],
