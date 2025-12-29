@@ -1,34 +1,58 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
-import { Category } from './category.entity';
-import { ProductType } from './product-type.entity';
-import { Subtype } from './subtype.entity';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
+import { BraceletsSubtypes, Category, ChainsSubtypes, EarringsSubtypes, PendantsSubtypes, ProductType, RingsSubtypes } from '../clasification.enum';
+import { ProductRating } from 'src/product-ratings/entities/product-rating.entity';
 
 @Entity()
 export class Product {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
+  @Column({type: 'varchar', length: 255, nullable: false})
   name: string;
 
-  @Column()
+  @Column({type: 'text', nullable: false})
   description: string;
 
-  @Column('decimal')
+  @Column('decimal', {nullable: false})
   price: number;
+
+  @Column({type: 'int', nullable: false})
+  stock: number;
 
   @Column({nullable: true})
   isFeatured: boolean;
 
+   @Column('decimal', { precision: 3, scale: 2, nullable: true })
+  averageRating: number; // Promedio de puntuaciones
+
+  @Column({ default: 0 })
+  ratingCount: number; // Número de puntuaciones
+
+  @OneToMany(() => ProductRating, (rating) => rating.product)
+  ratings: ProductRating[];
+
   @Column({ type: 'text', nullable: true })
   imageUrl: string | null;
 
-  @ManyToOne(() => Category, (category) => category.products)
+  @Column({ type: 'enum', enum: Category })
   category: Category;
 
-  @ManyToOne(() => ProductType, (productType) => productType.products)
+  @Column({ type: 'enum', enum: ProductType })
   productType: ProductType;
 
-  @ManyToOne(() => Subtype, (subtype) => subtype.products, { nullable: true })
-  subtype: Subtype | null;
+  @Column({ type: 'enum', enum: RingsSubtypes, nullable: true })
+  rings_subtype: RingsSubtypes | null;
+
+  @Column({ type: 'enum', enum: EarringsSubtypes, nullable: true })
+  earrings_subtype: EarringsSubtypes | null;
+
+  @Column({ type: 'enum', enum: ChainsSubtypes, nullable: true })
+  chains_subtype: ChainsSubtypes | null;
+
+  @Column({ type: 'enum', enum: BraceletsSubtypes, nullable: true })
+  bracelets_subtype: BraceletsSubtypes | null;
+
+  @Column({ type: 'enum', enum: PendantsSubtypes, nullable: true })
+  pendants_subtype: PendantsSubtypes | null;
+
 }

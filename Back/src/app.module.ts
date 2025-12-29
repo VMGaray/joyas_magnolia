@@ -10,6 +10,7 @@ import { AuthModule } from './auth/auth.module';
 import { JwtModule } from '@nestjs/jwt';
 import { UploadImageModule } from './image-upload/image-upload.module';
 import { MercadoPagoModule } from './mercado-pago/mercado-pago.module';
+import { ProductRatingsModule } from './product-ratings/product-ratings.module';
 
 @Module({
   imports: [
@@ -41,6 +42,7 @@ import { MercadoPagoModule } from './mercado-pago/mercado-pago.module';
     AuthModule,
     UploadImageModule,
     MercadoPagoModule,
+    ProductRatingsModule,
   ],
   controllers: [],
   providers: [],

@@ -19,6 +19,9 @@ export class Payment {
   @Column({ type: 'varchar', length: 100, nullable: true })
   paymentId: string;
 
+  @Column({ type: 'int', default: 1 })
+  quantity: number;
+
   @ManyToOne(() => Auth)
   user: Auth;
 

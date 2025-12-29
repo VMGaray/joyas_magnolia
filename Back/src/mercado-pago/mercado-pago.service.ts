@@ -83,12 +83,14 @@ export class MercadoPagoService {
         externalReference: response.external_reference,
         user: user,
         product: product,
+        quantity: quantity,
       });
       await this.paymentRepository.save(newPayment);
 
       return {
         id: response.id,
         init_point: response.init_point,
+        sandbox_init_point: response.sandbox_init_point,
       };
     } catch (error: any) {
       // Devolver el error de Mercado Pago al cliente
@@ -115,8 +117,17 @@ export class MercadoPagoService {
         });
 
         if (payment) {
+          const previousStatus = payment.status;
           payment.status = paymentData.status || 'unknown';
           payment.paymentId = paymentId.toString();
+
+          if (payment.status === 'approved' && previousStatus !== 'approved') {
+            const product = payment.product;
+            if (product) {
+              product.stock -= payment.quantity;
+              await this.productRepository.save(product);
+            }
+          }
           await this.paymentRepository.save(payment);
         }
       }

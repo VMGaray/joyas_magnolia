@@ -1,50 +1,106 @@
 import { ApiProperty } from '@nestjs/swagger';
-
+import { BraceletsSubtypes, Category, ChainsSubtypes, EarringsSubtypes, PendantsSubtypes, ProductType, RingsSubtypes } from '../clasification.enum';
+import { IsEnum, IsNumber, IsOptional, IsString, Min } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
 
 export class CreateProductDto {
   @ApiProperty({
     description: 'Nombre del producto',
     example: 'Anillo de Plata con Circón',
   })
+  @IsString()
   name: string;
 
   @ApiProperty({
     description: 'Descripción del producto',
     example: 'Hermoso anillo de plata 925 con circón brillante',
   })
+  @IsString()
   description: string;
 
   @ApiProperty({
     description: 'Precio del producto',
     example: 45000,
   })
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
   price: number;
 
   @ApiProperty({
-    description: 'URL de la imagen del producto',
-    example: 'https://example.com/images/anillo.jpg',
+    description: 'Stock disponible',
+    example: 10,
+  })
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  stock: number;
+
+  @ApiProperty({
+    description: 'Categoría del producto',
+    enum: Category,
+    example: Category.Silver925,
+  })
+  @IsEnum(Category)
+  category: Category;
+
+  @ApiProperty({
+    description: 'Tipo de producto',
+    enum: ProductType,
+    example: ProductType.Rings,
+  })
+  @IsEnum(ProductType)
+  productType: ProductType;
+
+  @ApiProperty({
+    description: 'Subtipo para Anillos',
+    enum: RingsSubtypes,
     required: false,
   })
-  imageUrl?: string;
+  @IsOptional()
+  @Transform(({ value }) => (value === '' ? undefined : value))
+  @IsEnum(RingsSubtypes)
+  rings_subtype?: RingsSubtypes;
 
   @ApiProperty({
-    description: 'ID de la categoría del producto',
-    example: 1,
-  })
-  categoryId: number;
-
-  @ApiProperty({
-    description: 'ID del tipo de producto',
-    example: 1,
-  })
-  productTypeId: number;
-
-  @ApiProperty({
-    description: 'ID del subtipo de producto',
-    example: 1,
+    description: 'Subtipo para Aros',
+    enum: EarringsSubtypes,
     required: false,
   })
-  subtypeId?: number;
+  @IsOptional()
+  @Transform(({ value }) => (value === '' ? undefined : value))
+  @IsEnum(EarringsSubtypes)
+  earrings_subtype?: EarringsSubtypes;
+
+  @ApiProperty({
+    description: 'Subtipo para Cadenas',
+    enum: ChainsSubtypes,
+    required: false,
+  })
+  @IsOptional()
+  @Transform(({ value }) => (value === '' ? undefined : value))
+  @IsEnum(ChainsSubtypes)
+  chains_subtype?: ChainsSubtypes;
+
+  @ApiProperty({
+    description: 'Subtipo para Pulseras',
+    enum: BraceletsSubtypes,
+    required: false,
+  })
+  @IsOptional()
+  @Transform(({ value }) => (value === '' ? undefined : value))
+  @IsEnum(BraceletsSubtypes)
+  bracelets_subtype?: BraceletsSubtypes;
+
+  @ApiProperty({
+    description: 'Subtipo para Dijes',
+    enum: PendantsSubtypes,
+    required: false,
+  })
+  @IsOptional()
+  @Transform(({ value }) => (value === '' ? undefined : value))
+  @IsEnum(PendantsSubtypes)
+  pendants_subtype?: PendantsSubtypes;
 
   @ApiProperty({
     type: 'string',
@@ -52,5 +108,6 @@ export class CreateProductDto {
     description: 'Archivo de imagen del producto',
     required: false,
   })
+  @IsOptional()
   file?: any;
 }
