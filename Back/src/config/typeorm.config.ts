@@ -14,6 +14,7 @@ const config = {
   password: process.env.DB_PASSWORD || 'password',
   database: process.env.DB_NAME || 'aidi_db',
   synchronize: true,
+  //dropSchema: true,
   logging: ['error'],
   entities: ['dist/**/*.entity{.ts,.js}'],
   migrations: ['dist/migrations/*{.ts,.js}'],
