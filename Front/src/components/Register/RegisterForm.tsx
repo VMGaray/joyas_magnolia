@@ -13,7 +13,7 @@ export const RegisterForm = () => {
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
-    phone: "", // <--- NUEVO CAMPO
+    phone: "",
     email: "",
     password: "",
     confirmPassword: ""
@@ -55,16 +55,11 @@ export const RegisterForm = () => {
         }),
       });
 
-      // --- CAMBIO IMPORTANTE AQUÍ ---
-      // 1. Primero leemos la respuesta como TEXTO puro
       const responseText = await response.text();
-      
-      // 2. Intentamos convertirla a JSON. Si falla, usamos el texto tal cual.
       let data;
       try {
         data = JSON.parse(responseText);
-      } catch (e) {
-        // Si no es JSON, asumimos que el texto es el mensaje
+      } catch {
         data = { message: responseText };
       }
 
@@ -73,12 +68,11 @@ export const RegisterForm = () => {
         throw new Error(serverError || "Ocurrió un error al registrarse");
       }
 
-      // 3. ¡Éxito!
       alert("¡Cuenta creada con éxito! Ahora iniciá sesión.");
-      router.push("/ingresar");
+      router.push("/login"); // ✅ corregido
 
     } catch (err: any) {
-      console.error(err); // Para ver el error real en consola
+      console.error(err);
       setError(err.message);
     } finally {
       setLoading(false);
@@ -124,7 +118,7 @@ export const RegisterForm = () => {
               </div>
           </div>
 
-          {/* Teléfono (NUEVO) */}
+          {/* Teléfono */}
           <div>
             <label className="block text-xs uppercase tracking-wider text-gray-500 mb-1">Teléfono</label>
             <div className="relative">
@@ -188,7 +182,7 @@ export const RegisterForm = () => {
         <div className="text-center mt-6">
             <p className="text-sm text-gray-600">
                 ¿Ya tenés cuenta?{" "}
-                <Link href="/ingresar" className="text-magnolia-lilac font-bold hover:underline">Ingresar</Link>
+                <Link href="/login" className="text-magnolia-lilac font-bold hover:underline">Ingresar</Link>
             </p>
         </div>
     </div>

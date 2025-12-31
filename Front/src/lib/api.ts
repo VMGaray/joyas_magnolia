@@ -1,4 +1,4 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
 // Tipos del backend
 export interface Category {
@@ -23,10 +23,11 @@ export interface BackendProduct {
   name: string;
   description: string;
   price: number;
-  imageUrl: string | null;
-  category: Category;
-  productType: ProductType;
-  subtype: Subtype | null;
+  stock: number; // ✅ obligatorio
+  imageUrl?: string | null;
+  category?: { id: number; name: string } | null;
+  productType?: { id: number; name: string } | null;
+  subtype?: { id: number; name: string } | null;
 }
 
 // Filtros para productos
@@ -36,77 +37,78 @@ export interface ProductFilters {
   subtype?: string;
 }
 
-// Funciones de API
+// 🔹 Helper para incluir token en cada request
+async function apiFetch(url: string, options: RequestInit = {}) {
+  const token = localStorage.getItem("token");
+
+  const headers: HeadersInit = {
+    ...(options.headers || {}),
+    "Content-Type": "application/json",
+  };
+
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
+  const res = await fetch(url, { ...options, headers });
+
+  if (!res.ok) {
+    throw new Error(`Error ${res.status}: ${await res.text()}`);
+  }
+
+  return res.json();
+}
+
+// 🔹 Funciones de API
 
 export async function getProducts(filters?: ProductFilters): Promise<BackendProduct[]> {
   const params = new URLSearchParams();
-
-  if (filters?.category) params.append('category', filters.category);
-  if (filters?.type) params.append('type', filters.type);
-  if (filters?.subtype) params.append('subtype', filters.subtype);
+  if (filters?.category) params.append("category", filters.category);
+  if (filters?.type) params.append("type", filters.type);
+  if (filters?.subtype) params.append("subtype", filters.subtype);
 
   const queryString = params.toString();
-  const url = `${API_URL}/products${queryString ? `?${queryString}` : ''}`;
+  const url = `${API_URL}/products${queryString ? `?${queryString}` : ""}`;
 
-  const response = await fetch(url);
-
-  if (!response.ok) {
-    throw new Error('Error al obtener productos');
-  }
-
-  return response.json();
+  return apiFetch(url);
 }
 
 export async function getCategories(): Promise<Category[]> {
-  const response = await fetch(`${API_URL}/products/categories`);
-
-  if (!response.ok) {
-    throw new Error('Error al obtener categorías');
-  }
-
-  return response.json();
+  return apiFetch(`${API_URL}/products/categories`);
 }
 
 export async function getProductTypes(): Promise<ProductType[]> {
-  const response = await fetch(`${API_URL}/products/product-types`);
-
-  if (!response.ok) {
-    throw new Error('Error al obtener tipos de productos');
-  }
-
-  return response.json();
+  return apiFetch(`${API_URL}/products/product-types`);
 }
 
 export async function getSubtypes(): Promise<Subtype[]> {
-  const response = await fetch(`${API_URL}/products/subtypes`);
-
-  if (!response.ok) {
-    throw new Error('Error al obtener subtipos');
-  }
-
-  return response.json();
+  return apiFetch(`${API_URL}/products/subtypes`);
 }
 
 export async function createProduct(data: {
   name: string;
   description: string;
   price: number;
-  imageUrl?: string;
-  categoryId: number;
-  productTypeId: number;
+  stock: number;
+  categoryId?: number;
+  productTypeId?: number;
   subtypeId?: number;
 }): Promise<BackendProduct> {
-  const response = await fetch(`${API_URL}/products`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+  return apiFetch(`${API_URL}/products`, {
+    method: "POST",
     body: JSON.stringify(data),
   });
+}
 
-  if (!response.ok) {
-    throw new Error('Error al crear producto');
-  }
+export async function updateProduct(id: number, data: Partial<BackendProduct>): Promise<BackendProduct> {
+  return apiFetch(`${API_URL}/products/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
 
-  return response.json();
+export async function deleteProduct(id: number): Promise<void> {
+  return apiFetch(`${API_URL}/products/${id}`, {
+    method: "DELETE",
+  });
 }

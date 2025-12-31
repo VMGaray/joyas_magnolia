@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { ShoppingCart, ChevronDown, Heart, User, LogOut, Settings } from "lucide-react"; // <--- Agregué iconos nuevos
+import { ShoppingCart, ChevronDown, Heart, User, LogOut, Settings } from "lucide-react";
 import { MENU_ITEMS } from "@/data/menuData"; 
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
@@ -13,7 +13,6 @@ export default function Navbar() {
   const { wishlistItems } = useWishlist();
   const hasFavorites = wishlistItems.length > 0;
 
-  // Traemos el estado y la función de cerrar sesión
   const { isLoggedIn, logout } = useAuth(); 
 
   return (
@@ -48,59 +47,52 @@ export default function Navbar() {
           <div className="absolute right-0 top-1/2 -translate-y-1/2 flex items-center gap-3 md:gap-4">
             
             {/* --- LÓGICA DE USUARIO / LOGIN --- */}
-            {/* --- LÓGICA DE USUARIO / LOGIN --- */}
             {isLoggedIn ? (
-                // OPCIÓN A: USUARIO LOGUEADO (Menú Desplegable)
-                <div className="relative group h-full flex items-center"> 
-                    <Link href="/perfil" className="text-magnolia-lilac py-2">
-                        <User size={24} strokeWidth={1.5} />
+              <div className="relative group h-full flex items-center"> 
+                <Link href="/perfil" className="text-magnolia-lilac py-2">
+                  <User size={24} strokeWidth={1.5} />
+                </Link>
+
+                {/* Menú Flotante */}
+                <div className="absolute right-0 top-[80%] pt-6 w-48 invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-200 z-50">
+                  <div className="bg-white border border-gray-100 shadow-lg rounded-sm flex flex-col overflow-hidden">
+                    
+                    <Link 
+                      href="/perfil" 
+                      className="px-4 py-3 text-sm text-gray-600 hover:bg-gray-50 hover:text-magnolia-lilac flex items-center gap-2 transition-colors border-b border-gray-50"
+                    >
+                      <Settings size={16} />
+                      Ir a mi Perfil
                     </Link>
 
-                    {/* Menú Flotante con PUENTE INVISIBLE */}
-                    <div className="absolute right-0 top-[80%] pt-6 w-48 invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-200 z-50">
-                        {/* Cajita blanca real */}
-                        <div className="bg-white border border-gray-100 shadow-lg rounded-sm flex flex-col overflow-hidden">
-                            
-                            {/* Opción 1: Ir al Perfil */}
-                            <Link 
-                                href="/perfil" 
-                                className="px-4 py-3 text-sm text-gray-600 hover:bg-gray-50 hover:text-magnolia-lilac flex items-center gap-2 transition-colors border-b border-gray-50"
-                            >
-                                <Settings size={16} />
-                                Ir a mi Perfil
-                            </Link>
-
-                            {/* Opción 2: Cerrar Sesión */}
-                            <button 
-                                onClick={logout}
-                                className="w-full text-left px-4 py-3 text-sm text-red-400 hover:bg-red-50 flex items-center gap-2 transition-colors"
-                            >
-                                <LogOut size={16} />
-                                Cerrar Sesión
-                            </button>
-                        </div>
-                    </div>
+                    <button 
+                      onClick={logout}
+                      className="w-full text-left px-4 py-3 text-sm text-red-400 hover:bg-red-50 flex items-center gap-2 transition-colors"
+                    >
+                      <LogOut size={16} />
+                      Cerrar Sesión
+                    </button>
+                  </div>
                 </div>
+              </div>
             ) : (
-                // OPCIÓN B: NO LOGUEADO
-                <Link 
-                    href="/ingresar" 
-                    className="text-gray-700 hover:text-magnolia-lilac transition-colors"
-                    title="Iniciar Sesión"
-                >
-                    <User size={24} strokeWidth={1.5} />
-                </Link>
+              <Link 
+                href="/login"
+                className="text-gray-700 hover:text-magnolia-lilac transition-colors"
+                title="Iniciar Sesión"
+              >
+                <User size={24} strokeWidth={1.5} />
+              </Link>
             )}
-
 
             {/* Favoritos */}
             <Link href="/favoritos" className="text-gray-700 hover:text-red-400 transition-colors">
-                <Heart 
-                  size={24} 
-                  strokeWidth={1.5} 
-                  fill={hasFavorites ? "#F87171" : "none"} 
-                  className={hasFavorites ? "text-red-400" : "text-gray-700 group-hover:text-red-400"}
-                />
+              <Heart 
+                size={24} 
+                strokeWidth={1.5} 
+                fill={hasFavorites ? "#F87171" : "none"} 
+                className={hasFavorites ? "text-red-400" : "text-gray-700 group-hover:text-red-400"}
+              />
             </Link>
 
             {/* Carrito */}
@@ -108,21 +100,19 @@ export default function Navbar() {
               onClick={toggleCart} 
               className="relative text-gray-700 hover:text-magnolia-lilac transition-colors"
             >
-                <ShoppingCart size={24} strokeWidth={1.5} />
-                {totalItems > 0 && (
-                  <span className="absolute -top-2 -right-2 bg-magnolia-lilac text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center">
-                    {totalItems}
-                  </span>
-                )}
+              <ShoppingCart size={24} strokeWidth={1.5} />
+              {totalItems > 0 && (
+                <span className="absolute -top-2 -right-2 bg-magnolia-lilac text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center">
+                  {totalItems}
+                </span>
+              )}
             </button>
           </div>
-
         </div>
 
         {/* --- MENÚ DE NAVEGACIÓN (Categorías) --- */}
         <nav className="relative w-full">
           <ul className="flex flex-wrap justify-center gap-8 text-sm font-sans text-gray-600 font-medium tracking-wide">
-            
             {MENU_ITEMS.map((category) => (
               <li key={category.title} className="group py-4">
                 <Link 
@@ -131,11 +121,10 @@ export default function Navbar() {
                 >
                   {category.title}
                   {category.sections && category.sections.length > 0 && (
-                      <ChevronDown size={14} className="opacity-50 group-hover:rotate-180 transition-transform"/>
+                    <ChevronDown size={14} className="opacity-50 group-hover:rotate-180 transition-transform"/>
                   )}
                 </Link>
 
-                {/* MEGA MENU DE CATEGORÍAS */}
                 {category.sections && category.sections.length > 0 && (
                   <div className="absolute left-0 top-full w-full bg-white border-t border-gray-100 shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50">
                     <div className="container mx-auto px-8 py-8">
@@ -167,7 +156,6 @@ export default function Navbar() {
             ))}
           </ul>
         </nav>
-
       </div>
     </header>
   );

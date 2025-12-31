@@ -12,6 +12,8 @@ export interface FrontendProduct {
   category: string; // slug del tipo de producto (anillos, pulseras, etc.)
   material: string; // slug de la categoría (plata-925, oro-18kl, enchapado)
   images: string[];
+  stock: number;
+  
 }
 
 // Convierte nombres a slugs
@@ -44,7 +46,6 @@ function categoryToMaterial(categoryName: string): string {
 
 // Adapta un producto del backend al formato del frontend
 export function adaptBackendProduct(backendProduct: BackendProduct): FrontendProduct {
-  // Imagen por defecto si no hay imageUrl o si es de ejemplo.com
   const defaultImage = '/cat-anillos.jpg';
   const image = backendProduct.imageUrl && !backendProduct.imageUrl.includes('ejemplo.com')
     ? backendProduct.imageUrl
@@ -56,13 +57,15 @@ export function adaptBackendProduct(backendProduct: BackendProduct): FrontendPro
     price: backendProduct.price,
     formattedPrice: formatPrice(backendProduct.price),
     image: image,
-    rating: 5, // Por defecto 5 estrellas (puedes ajustar esto según necesites)
+    rating: 5,
     description: backendProduct.description,
-    category: toSlug(backendProduct.productType.name), // "Anillos" -> "anillos"
-    material: categoryToMaterial(backendProduct.category.name), // "Plata 925" -> "plata-925"
-    images: [image], // Por ahora solo una imagen, después se puede expandir
+    category: toSlug(backendProduct.productType?.name || 'sin-tipo'),
+    material: categoryToMaterial(backendProduct.category?.name || 'sin-categoria'),
+    images: [image],
+    stock: typeof backendProduct.stock === "number" ? backendProduct.stock : 0, // ✅ agregado
   };
 }
+
 
 // Adapta un array de productos
 export function adaptBackendProducts(backendProducts: BackendProduct[]): FrontendProduct[] {
