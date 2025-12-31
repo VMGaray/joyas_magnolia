@@ -1,4 +1,5 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { ProductRating } from 'src/product-ratings/entities/product-rating.entity';
+import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 
 @Entity({ name: 'auth' })
 export class Auth {
@@ -19,4 +20,7 @@ export class Auth {
 
   @Column({ type: 'boolean', default: false })
   isAdmin: boolean;
+
+  @OneToMany(() => ProductRating, (rating) => rating.user)
+  ratings: ProductRating[];
 }

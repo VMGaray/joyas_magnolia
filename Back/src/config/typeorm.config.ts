@@ -3,6 +3,7 @@
 import { registerAs } from '@nestjs/config';
 import { configDotenv } from 'dotenv';
 import { DataSource, DataSourceOptions } from 'typeorm';
+import { join } from 'path';
 
 configDotenv({ path: '.env' });
 
@@ -16,8 +17,9 @@ const config = {
   synchronize: true,
   //dropSchema: true,
   logging: ['error'],
-  entities: ['dist/**/*.entity{.ts,.js}'],
-  migrations: ['dist/migrations/*{.ts,.js}'],
+  dropSchema: false,
+  entities: [join(__dirname, '/../**/*.entity{.ts,.js}')],
+  migrations: [join(__dirname, '/../migrations/*{.ts,.js}')],
   extra: {
     ssl:
       process.env.NODE_ENV === 'production'
