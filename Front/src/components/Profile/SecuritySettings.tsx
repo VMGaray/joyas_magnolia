@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import { Lock, Loader2, Check } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 
 export const SecuritySettings = () => {
+  const { user, token } = useAuth(); // 👈 traemos user y token del contexto
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
   const [saving, setSaving] = useState(false);
@@ -17,9 +19,12 @@ export const SecuritySettings = () => {
     setError(null);
 
     try {
-      const res = await fetch("http://localhost:4000/auth/change-password", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const res = await fetch(`http://localhost:4000/auth/change-password/${user?.id}`, {
+        method: "PUT", // 👈 corregido
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`, // 👈 enviamos el token
+        },
         body: JSON.stringify({ currentPassword: current, newPassword: next }),
       });
 

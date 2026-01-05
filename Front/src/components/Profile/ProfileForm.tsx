@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Mail, Phone, MapPin, Loader2, Check } from "lucide-react";
 import type { UserData } from "./ProfileDashboard";
+import { useAuth } from "@/context/AuthContext";
 
 interface ProfileFormProps {
   userData: UserData | null;
@@ -31,9 +32,8 @@ export const ProfileForm = ({ userData, onSaved }: ProfileFormProps) => {
     setError(null);
 
     try {
-      // Si tu backend expone otra ruta, ajusta el endpoint:
-      // Ej: PUT http://localhost:4000/auth/profile
-      const res = await fetch("http://localhost:4000/auth/update", {
+           
+      const res = await fetch("http://localhost:4000/auth/profile/{id}", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),

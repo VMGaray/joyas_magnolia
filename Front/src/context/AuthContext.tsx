@@ -1,11 +1,22 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
+import { jwtDecode } from "jwt-decode";
+
+interface User {
+  id: string;
+  email: string;
+  isAdmin?: boolean;
+  username?: string;
+  phone?: string;
+  address?: string;
+}
 
 interface AuthContextType {
   isLoggedIn: boolean;
   token: string | null;
-  login: (token: string, user?: any) => void;
+  user: User | null;
+  login: (token: string) => void;
   logout: () => void;
   checkLogin: () => void;
 }
@@ -13,6 +24,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType>({
   isLoggedIn: false,
   token: null,
+  user: null,
   login: () => {},
   logout: () => {},
   checkLogin: () => {},
@@ -23,38 +35,58 @@ export const useAuth = () => useContext(AuthContext);
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [token, setToken] = useState<string | null>(null);
+  const [user, setUser] = useState<User | null>(null);
 
-  // Función para verificar si hay token guardado
-  const checkLogin = () => {
-    const storedToken = localStorage.getItem("token");
-    setIsLoggedIn(!!storedToken);
-    setToken(storedToken);
+  const decodeToken = (token: string): User | null => {
+    try {
+      const decoded: any = jwtDecode(token);
+      return {
+        id: decoded.id,
+        email: decoded.email,
+        isAdmin: decoded.isAdmin,
+      };
+    } catch (error) {
+      console.error("Error al decodificar el token:", error);
+      return null;
+    }
   };
 
-  // Se ejecuta al cargar la página por primera vez
+  const checkLogin = () => {
+    const storedToken = localStorage.getItem("token");
+    if (storedToken) {
+      const decodedUser = decodeToken(storedToken);
+      setIsLoggedIn(true);
+      setToken(storedToken);
+      setUser(decodedUser);
+    } else {
+      setIsLoggedIn(false);
+      setToken(null);
+      setUser(null);
+    }
+  };
+
   useEffect(() => {
     checkLogin();
   }, []);
 
-  // Función para iniciar sesión (Guarda token y actualiza estado)
-  const login = (token: string, user?: any) => {
+  const login = (token: string) => {
+    const decodedUser = decodeToken(token);
     localStorage.setItem("token", token);
-    if (user) localStorage.setItem("user", JSON.stringify(user));
     setIsLoggedIn(true);
     setToken(token);
+    setUser(decodedUser);
   };
 
-  // Función para cerrar sesión
   const logout = () => {
     localStorage.removeItem("token");
-    localStorage.removeItem("user");
     setIsLoggedIn(false);
     setToken(null);
-    window.location.href = "/"; // Redirige al home
+    setUser(null);
+    window.location.href = "/";
   };
 
   return (
-    <AuthContext.Provider value={{ isLoggedIn, token, login, logout, checkLogin }}>
+    <AuthContext.Provider value={{ isLoggedIn, token, user, login, logout, checkLogin }}>
       {children}
     </AuthContext.Provider>
   );

@@ -31,40 +31,36 @@ export const LoginForm = () => {
     setLoading(true);
 
     try {
+      console.log("Login payload:", formData);
+
       const response = await fetch("http://localhost:4000/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
 
-      // Lógica "Todoterreno" para leer el token (Texto o JSON)
       const responseText = await response.text();
-      let data;
-      let token;
+      let data: any = null;
+      let token: string | null = null;
 
       try {
         data = JSON.parse(responseText);
-        token = data.token || data.access_token;
-      } catch (error) {
-        token = responseText;
+        token = data?.token || data?.access_token || null;
+      } catch {
+        console.warn("No se pudo parsear la respuesta como JSON");
+        token = null;
       }
 
-      if (!response.ok) {
+      console.log("Login response:", data);
+
+      if (!response.ok || !token) {
         throw new Error(data?.message || "Credenciales inválidas");
       }
 
-      if (!token) {
-        throw new Error("No se recibió el token de seguridad");
-      }
+      // ✅ Guardar solo el token en contexto (AuthContext decodifica)
+      login(token.replace(/^"|"$/g, ""));
 
-      // --- 3. AQUÍ ESTÁ EL CAMBIO IMPORTANTE ---
-      // Usamos la función del contexto. Ella se encarga de guardar en localStorage
-      // y de avisarle al Navbar que cambie de color.
-      login(token.replace(/^"|"$/g, ''), data?.user); 
-      
-      // Redirigimos rápido sin recargar la página
-      router.push("/");
-
+      router.push("/perfil");
     } catch (err: any) {
       console.error(err);
       setError(err.message);
