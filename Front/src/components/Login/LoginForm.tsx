@@ -5,6 +5,8 @@ import { Mail, Lock, ArrowRight, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext"; // <--- 1. IMPORTAMOS EL CONTEXTO
+import { notifySuccess, notifyError } from "@/components/helpers/Toast";
+
 
 export const LoginForm = () => {
   const router = useRouter();
@@ -62,10 +64,12 @@ export const LoginForm = () => {
     }
 
     login(token.replace(/^"|"$/g, ""));
+    notifySuccess("¡Bienvenida de nuevo ✨");
     router.push("/perfil");
   } catch (err: any) {
     console.error(err);
     setError(err.message);
+    notifyError("Credenciales inválidas ❌");
   } finally {
     setLoading(false);
   }

@@ -6,6 +6,7 @@ import { CartProvider } from "../context/CartContext";
 import CartSidebar from "../components/CartSidebar";
 import { WishlistProvider } from "../context/WishlistContext";
 import { AuthProvider } from "../context/AuthContext";
+import { ToastProvider } from "@/components/helpers/Toast";
 import "./globals.css";
 
 // ... (Fuentes y metadata siguen igual) ...
@@ -32,20 +33,26 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es">
-      <body className={`${playfair.variable} ${lato.variable} font-sans antialiased`}>
-        {/* ENVOLVEMOS TODO CON EL CART PROVIDER */}
-        <AuthProvider>
+  <html lang="es">
+    <body className={`${playfair.variable} ${lato.variable} font-sans antialiased`}>
+      {/* ENVOLVEMOS TODO CON EL CART PROVIDER */}
+      <AuthProvider>
         <CartProvider>
-          <WishlistProvider> {/* <--- NUEVO ENVOLTORIO */}
-          <Navbar />
-          <CartSidebar />
-          {children}
-          <Footer />
+          <WishlistProvider>
+            <Navbar />
+            <CartSidebar />
+
+            {/* Aquí montamos el ToastProvider */}
+            <ToastProvider />
+
+            {children}
+
+            <Footer />
           </WishlistProvider>
         </CartProvider>
-        </AuthProvider>
-      </body>
-    </html>
-  );
+      </AuthProvider>
+    </body>
+  </html>
+);
+
 }
