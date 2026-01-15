@@ -16,7 +16,7 @@ interface AuthContextType {
   isLoggedIn: boolean;
   token: string | null;
   user: User | null;
-  login: (token: string) => void;
+  login: (token: string) => Promise<void>;
   logout: () => void;
   checkLogin: () => void;
 }
@@ -25,7 +25,7 @@ const AuthContext = createContext<AuthContextType>({
   isLoggedIn: false,
   token: null,
   user: null,
-  login: () => {},
+  login: async () => {},
   logout: () => {},
   checkLogin: () => {},
 });
@@ -51,13 +51,29 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  const fetchProfile = async (id: string, token: string) => {
+    try {
+      const res = await fetch(`http://localhost:4000/auth/profile/${id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (!res.ok) throw new Error("No se pudo obtener el perfil");
+      const profile = await res.json();
+      setUser(profile);
+      localStorage.setItem("user", JSON.stringify(profile));
+    } catch (error) {
+      console.error("Error al traer perfil:", error);
+    }
+  };
+
   const checkLogin = () => {
     const storedToken = localStorage.getItem("token");
+    const storedUser = localStorage.getItem("user");
     if (storedToken) {
-      const decodedUser = decodeToken(storedToken);
       setIsLoggedIn(true);
       setToken(storedToken);
-      setUser(decodedUser);
+      setUser(storedUser ? JSON.parse(storedUser) : decodeToken(storedToken));
     } else {
       setIsLoggedIn(false);
       setToken(null);
@@ -69,16 +85,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     checkLogin();
   }, []);
 
-  const login = (token: string) => {
+  const login = async (token: string) => {
     const decodedUser = decodeToken(token);
     localStorage.setItem("token", token);
     setIsLoggedIn(true);
     setToken(token);
-    setUser(decodedUser);
+
+    if (decodedUser?.id) {
+      await fetchProfile(decodedUser.id, token);
+    } else {
+      setUser(decodedUser);
+    }
   };
 
   const logout = () => {
     localStorage.removeItem("token");
+    localStorage.removeItem("user");
     setIsLoggedIn(false);
     setToken(null);
     setUser(null);

@@ -26,48 +26,51 @@ export const LoginForm = () => {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    setLoading(true);
+  e.preventDefault();
+  setError("");
+  setLoading(true);
+
+  try {
+    console.log("Login payload:", formData);
+
+    const response = await fetch("http://localhost:4000/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(formData),
+    });
+
+    const responseText = await response.text();
+    console.log("Raw login response:", responseText);
+
+    let token: string | null = null;
 
     try {
-      console.log("Login payload:", formData);
-
-      const response = await fetch("http://localhost:4000/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
-
-      const responseText = await response.text();
-      let data: any = null;
-      let token: string | null = null;
-
-      try {
-        data = JSON.parse(responseText);
-        token = data?.token || data?.access_token || null;
-      } catch {
+      const data = JSON.parse(responseText);
+      token = data?.token || data?.access_token || null;
+    } catch {
+      // Si no es JSON, asumimos que el texto plano es el token
+      if (response.ok && responseText.length > 100) {
+        token = responseText;
+      } else {
         console.warn("No se pudo parsear la respuesta como JSON");
         token = null;
       }
-
-      console.log("Login response:", data);
-
-      if (!response.ok || !token) {
-        throw new Error(data?.message || "Credenciales inválidas");
-      }
-
-      // ✅ Guardar solo el token en contexto (AuthContext decodifica)
-      login(token.replace(/^"|"$/g, ""));
-
-      router.push("/perfil");
-    } catch (err: any) {
-      console.error(err);
-      setError(err.message);
-    } finally {
-      setLoading(false);
     }
-  };
+
+    if (!response.ok || !token) {
+      throw new Error("Credenciales inválidas");
+    }
+
+    login(token.replace(/^"|"$/g, ""));
+    router.push("/perfil");
+  } catch (err: any) {
+    console.error(err);
+    setError(err.message);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   return (
     <div className="bg-white w-full max-w-md p-8 rounded-sm shadow-sm border border-gray-100">
