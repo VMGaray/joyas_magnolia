@@ -1,5 +1,6 @@
 import { ProductRating } from 'src/product-ratings/entities/product-rating.entity';
 import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import { Order } from '../../order/entities/order.entity';
 
 @Entity({ name: 'auth' })
 export class Auth {
@@ -23,4 +24,7 @@ export class Auth {
 
   @OneToMany(() => ProductRating, (rating) => rating.user)
   ratings: ProductRating[];
+
+  @OneToMany(() => Order, (order) => order.user)
+  orders: Order[];
 }

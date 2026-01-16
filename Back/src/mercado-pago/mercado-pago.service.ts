@@ -6,7 +6,9 @@ import { MercadoPagoConfig, Preference, Payment as MPPayment } from 'mercadopago
 import { Payment } from './entities/payment.entity';
 import { Product } from '../products/entities/product.entity';
 import { Auth } from '../auth/entities/auth.entity';
+import { Order } from '../order/entities/order.entity';
 import { CreatePreferenceDto } from './dto/create-preference.dto';
+import { OrderStatus } from '../order/order-status.enum';
 
 @Injectable()
 export class MercadoPagoService {
@@ -20,6 +22,8 @@ export class MercadoPagoService {
     private productRepository: Repository<Product>,
     @InjectRepository(Auth)
     private authRepository: Repository<Auth>,
+    @InjectRepository(Order)
+    private orderRepository: Repository<Order>,
   ) {
     const accessToken = this.configService.get<string>('MP_ACCESS_TOKEN');
     this.client = new MercadoPagoConfig({
@@ -29,10 +33,13 @@ export class MercadoPagoService {
   }
 
   async createPreference(createPreferenceDto: CreatePreferenceDto) {
-    const { productId, userId, quantity } = createPreferenceDto;
+    const { orderId, userId } = createPreferenceDto;
 
-    const product = await this.productRepository.findOneBy({ id: productId });
-    if (!product) throw new NotFoundException('Product not found');
+    const order = await this.orderRepository.findOne({
+      where: { id: orderId },
+      relations: ['items', 'items.product', 'user'],
+    });
+    if (!order) throw new NotFoundException('Order not found');
 
     const user = await this.authRepository.findOneBy({ id: userId });
     if (!user) throw new NotFoundException('User not found');
@@ -53,15 +60,13 @@ export class MercadoPagoService {
     try {
       const response = await preference.create({
         body: {
-          items: [
-            {
-              id: product.id,
-              title: product.name,
-              unit_price: Number(product.price),
-              quantity: quantity,
-              currency_id: 'ARS',
-            },
-          ],
+          items: order.items.map((item) => ({
+            id: item.product.id,
+            title: item.product.name,
+            unit_price: Number(item.price),
+            quantity: item.quantity,
+            currency_id: 'ARS',
+          })),
           payer: {
             email: user.email,
           },
@@ -72,18 +77,17 @@ export class MercadoPagoService {
           },
           auto_return: 'approved',
           notification_url: notificationUrl,
-          external_reference: `${userId}#${productId}`,
+          external_reference: `${userId}#${orderId}`,
         },
       });
 
       // Guardar el pago inicial en la base de datos
       const newPayment = this.paymentRepository.create({
-        amount: Number(product.price) * quantity,
+        amount: order.totalPrice,
         status: 'pending',
         externalReference: response.external_reference,
         user: user,
-        product: product,
-        quantity: quantity,
+        order: order,
       });
       await this.paymentRepository.save(newPayment);
 
@@ -93,7 +97,6 @@ export class MercadoPagoService {
         sandbox_init_point: response.sandbox_init_point,
       };
     } catch (error: any) {
-      // Devolver el error de Mercado Pago al cliente
       const errorMessage = error.message || 'Unknown error';
       const errorCause = error.cause || error;
       throw new BadRequestException({
@@ -113,7 +116,7 @@ export class MercadoPagoService {
       if (externalReference) {
         const payment = await this.paymentRepository.findOne({
           where: { externalReference },
-          relations: ['user', 'product'],
+          relations: ['user', 'order', 'order.items', 'order.items.product'],
         });
 
         if (payment) {
@@ -122,10 +125,26 @@ export class MercadoPagoService {
           payment.paymentId = paymentId.toString();
 
           if (payment.status === 'approved' && previousStatus !== 'approved') {
-            const product = payment.product;
-            if (product) {
-              product.stock -= payment.quantity;
-              await this.productRepository.save(product);
+            // Update order status
+            const order = payment.order;
+            if (order) {
+              order.status = OrderStatus.PROCESSED;
+              await this.orderRepository.save(order);
+
+              // Deduct stock for all items in order
+              for (const item of order.items) {
+                const product = item.product;
+                if (product) {
+                  product.stock -= item.quantity;
+                  await this.productRepository.save(product);
+                }
+              }
+            }
+          } else if (payment.status === 'rejected' || payment.status === 'cancelled') {
+            const order = payment.order;
+            if (order) {
+              order.status = OrderStatus.CANCELLED;
+              await this.orderRepository.save(order);
             }
           }
           await this.paymentRepository.save(payment);

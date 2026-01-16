@@ -1,6 +1,6 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, OneToOne, JoinColumn } from 'typeorm';
 import { Auth } from '../../auth/entities/auth.entity';
-import { Product } from '../../products/entities/product.entity';
+import { Order } from '../../order/entities/order.entity';
 
 @Entity({ name: 'payments' })
 export class Payment {
@@ -19,14 +19,12 @@ export class Payment {
   @Column({ type: 'varchar', length: 100, nullable: true })
   paymentId: string;
 
-  @Column({ type: 'int', default: 1 })
-  quantity: number;
-
   @ManyToOne(() => Auth)
   user: Auth;
 
-  @ManyToOne(() => Product)
-  product: Product;
+  @OneToOne(() => Order)
+  @JoinColumn()
+  order: Order;
 
   @CreateDateColumn()
   createdAt: Date;
