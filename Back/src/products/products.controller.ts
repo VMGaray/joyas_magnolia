@@ -19,6 +19,7 @@ import {
   ApiQuery,
   ApiBearerAuth,
   ApiConsumes,
+  ApiParam,
 } from '@nestjs/swagger';
 import { ProductsService } from './products.service';
 import { CreateProductDto } from './dto/create-product.dto';
@@ -28,6 +29,7 @@ import { AuthGuard } from 'src/auth/guards/auth.guard';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
 import { Roles } from 'src/decorators/rol.decorator';
 import { Role } from 'src/auth/rol.enum';
+import { ProductType } from './clasification.enum';
 
 @ApiTags('products')
 @Controller('products')
@@ -49,6 +51,28 @@ export class ProductsController {
     @UploadedFile() file: Express.Multer.File,
   ) {
     return this.productsService.create(createProductDto, file);
+  }
+
+  @Get('categories')
+  @ApiOperation({ summary: 'Obtener todas las categorías de productos' })
+  @ApiResponse({ status: 200, description: 'Lista de categorías obtenida' })
+  getCategories() {
+    return this.productsService.getCategories();
+  }
+
+  @Get('types')
+  @ApiOperation({ summary: 'Obtener todos los tipos de productos' })
+  @ApiResponse({ status: 200, description: 'Lista de tipos obtenida' })
+  getTypes() {
+    return this.productsService.getTypes();
+  }
+
+  @Get('subtypes/:type')
+  @ApiOperation({ summary: 'Obtener subtipos por tipo de producto' })
+  @ApiParam({ name: 'type', enum: ProductType, description: 'Tipo de producto' })
+  @ApiResponse({ status: 200, description: 'Lista de subtipos obtenida' })
+  getSubtypes(@Param('type') type: ProductType) {
+    return this.productsService.getSubtypes(type);
   }
 
   @Get()

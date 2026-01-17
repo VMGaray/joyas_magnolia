@@ -9,6 +9,7 @@ import { Product } from './entities/product.entity';
 import { CreateProductDto } from './dto/create-product.dto';
 import { FilterProductsDto } from './dto/filter-products.dto';
 import { FileUploadService } from 'src/image-upload/image-upload.service';
+import { BraceletsSubtypes, Category, ChainsSubtypes, EarringsSubtypes, PendantsSubtypes, ProductType, RingsSubtypes } from './clasification.enum';
 
 @Injectable()
 export class ProductsService {
@@ -133,5 +134,30 @@ export class ProductsService {
     }
 
     return await this.productRepository.remove(productFound);
+  }
+
+  getCategories() {
+    return Object.values(Category);
+  }
+
+  getTypes() {
+    return Object.values(ProductType);
+  }
+
+  getSubtypes(type: ProductType) {
+    switch (type) {
+      case ProductType.Rings:
+        return Object.values(RingsSubtypes);
+      case ProductType.Earrings:
+        return Object.values(EarringsSubtypes);
+      case ProductType.Chains:
+        return Object.values(ChainsSubtypes);
+      case ProductType.Bracelets:
+        return Object.values(BraceletsSubtypes);
+      case ProductType.Pendants:
+        return Object.values(PendantsSubtypes);
+      default:
+        return [];
+    }
   }
 }
