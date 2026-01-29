@@ -17,15 +17,15 @@ const config = {
   synchronize: true,
   //dropSchema: true,
   logging: ['error'],
-  dropSchema: false,
+  dropSchema: true,
   entities: [join(__dirname, '/../**/*.entity{.ts,.js}')],
   migrations: [join(__dirname, '/../migrations/*{.ts,.js}')],
   extra: {
     ssl:
       process.env.NODE_ENV === 'production'
         ? {
-            rejectUnauthorized: false,
-          }
+          rejectUnauthorized: false,
+        }
         : false,
   },
 };

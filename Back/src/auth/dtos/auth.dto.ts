@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
+  IsOptional,
   IsEmail,
   IsNotEmpty,
   IsNumber,
@@ -7,6 +8,34 @@ import {
   IsStrongPassword,
   Length,
 } from 'class-validator';
+
+export class UpdateUserDto {
+  @ApiProperty({
+    example: 'Maria Perez',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  @Length(3, 80)
+  username?: string;
+
+  @ApiProperty({
+    example: '1234567890',
+    required: false,
+  })
+  @IsOptional()
+  @IsNumber()
+  phone?: number;
+
+  @ApiProperty({
+    example: 'Calle Falsa 123',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  @Length(3, 150)
+  address?: string;
+}
 
 export class RegisterDto {
   @ApiProperty({
@@ -56,6 +85,15 @@ export class RegisterDto {
   @IsNotEmpty()
   @IsNumber()
   phone: number;
+
+  @ApiProperty({
+    example: 'Calle Falsa 123',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  @Length(3, 150)
+  address?: string;
 }
 
 export class LoginDto {

@@ -8,7 +8,7 @@ import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { Auth } from './entities/auth.entity';
-import { ChangePasswordDto, LoginDto, RegisterDto } from './dtos/auth.dto';
+import { ChangePasswordDto, LoginDto, RegisterDto, UpdateUserDto } from './dtos/auth.dto';
 
 @Injectable()
 export class AuthService {
@@ -16,7 +16,7 @@ export class AuthService {
     @InjectRepository(Auth)
     private readonly authRepository: Repository<Auth>,
     private readonly jwtService: JwtService,
-  ) {}
+  ) { }
 
   async registerUser(user: RegisterDto) {
     const userFound: Auth | null = await this.authRepository.findOne({
@@ -35,6 +35,7 @@ export class AuthService {
       email: user.email,
       password: hashPassword,
       phone: user.phone,
+      address: user.address,
     });
 
     return 'Usuario registrado con éxito';
@@ -74,6 +75,26 @@ export class AuthService {
       username: user.username,
       email: user.email,
       phone: user.phone,
+      address: user.address,
+    };
+  }
+
+  async updateUser(id: string, data: UpdateUserDto) {
+    const user = await this.authRepository.findOne({ where: { id } });
+
+    if (!user) throw new BadRequestException('Usuario no encontrado');
+
+    await this.authRepository.update(id, data);
+
+    const updatedUser = await this.authRepository.findOne({ where: { id } });
+
+    if (!updatedUser) throw new BadRequestException('Error al actualizar');
+
+    return {
+      username: updatedUser.username,
+      email: updatedUser.email,
+      phone: updatedUser.phone,
+      address: updatedUser.address
     };
   }
 

@@ -22,6 +22,9 @@ export class Auth {
   @Column({ type: 'boolean', default: false })
   isAdmin: boolean;
 
+  @Column({ type: 'varchar', length: 150, nullable: true })
+  address: string;
+
   @OneToMany(() => ProductRating, (rating) => rating.user)
   ratings: ProductRating[];
 
