@@ -60,7 +60,7 @@ export default function Navbar() {
                 </Link>
 
                 {/* Menú Flotante */}
-                <div className="absolute right-0 top-[80%] pt-6 w-48 invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-200 z-50">
+                <div className="absolute right-0 top-full mt-2 w-48 invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-200 z-50">
                   <div className="bg-white border border-gray-100 shadow-lg rounded-sm flex flex-col overflow-hidden">
                     
                     <Link 
