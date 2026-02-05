@@ -2,99 +2,14 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { ShoppingCart, ChevronDown, Heart, User, LogOut, Settings } from "lucide-react";
-import { useState, useRef, useEffect } from "react";
+import { ShoppingCart, ChevronDown, Heart, User } from "lucide-react";
 import { MENU_ITEMS } from "@/data/menuData"; 
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
 import { useAuth } from "@/context/AuthContext";
 import { notifySuccess, notifyError } from "@/components/helpers/Toast"; // 👈 importamos helpers
 
-function UserMenu() {
-  const { logout } = useAuth();
-  const [open, setOpen] = useState(false);
-  const buttonRef = useRef<HTMLButtonElement | null>(null);
-  const menuRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (
-        open &&
-        buttonRef.current &&
-        menuRef.current &&
-        !buttonRef.current.contains(e.target as Node) &&
-        !menuRef.current.contains(e.target as Node)
-      ) {
-        setOpen(false);
-      }
-    }
-
-    function handleKey(e: KeyboardEvent) {
-      if (e.key === "Escape") setOpen(false);
-    }
-
-    document.addEventListener("mousedown", handleClickOutside);
-    document.addEventListener("keydown", handleKey);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      document.removeEventListener("keydown", handleKey);
-    };
-  }, [open]);
-
-  const handleLogout = () => {
-    setOpen(false);
-    try {
-      // debug log to check click
-      // console.log("Navbar: logout clicked");
-      logout();
-      // ensure redirect in case logout doesn't navigate
-      window.location.href = "/";
-      notifyError("Sesión cerrada correctamente 👋");
-    } catch (err) {
-      console.error("Error during navbar logout:", err);
-    }
-  };
-
-  return (
-    <div className="relative h-full flex items-center">
-      <button
-        type="button"
-        ref={buttonRef}
-        aria-expanded={open}
-        onClick={(e) => {
-          e.stopPropagation();
-          setOpen((v) => !v);
-        }}
-        className="text-magnolia-lilac py-2"
-      >
-        <User size={24} strokeWidth={1.5} />
-      </button>
-
-      {open && (
-        <div ref={menuRef} className="absolute right-0 top-full mt-2 w-48 z-50">
-          <div className="bg-white border border-gray-100 shadow-lg rounded-sm flex flex-col overflow-hidden">
-            <Link
-              href="/perfil"
-              onClick={() => setOpen(false)}
-              className="px-4 py-3 text-sm text-gray-600 hover:bg-gray-50 hover:text-magnolia-lilac flex items-center gap-2 transition-colors border-b border-gray-50"
-            >
-              <Settings size={16} />
-              Ir a mi Perfil
-            </Link>
-
-            <button
-              onClick={handleLogout}
-              className="w-full text-left px-4 py-3 text-sm text-red-400 hover:bg-red-50 flex items-center gap-2 transition-colors"
-            >
-              <LogOut size={16} />
-              Cerrar Sesión
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
+// UserMenu removed - the user icon will link directly to the profile when logged in
 
 export default function Navbar() {
   const { toggleCart, totalItems } = useCart();
@@ -103,10 +18,6 @@ export default function Navbar() {
 
   const { isLoggedIn, logout } = useAuth(); 
 
-  const handleLogout = () => {
-    logout();
-    notifyError("Sesión cerrada correctamente 👋"); // 👈 toast de despedida
-  };
 
   return (
     <header className="w-full bg-white pt-6 pb-0 border-b border-gray-100 relative z-50">
@@ -141,8 +52,9 @@ export default function Navbar() {
             
             {/* --- LÓGICA DE USUARIO / LOGIN --- */}
             {isLoggedIn ? (
-              // Toggle menu por click (mejor para evitar pérdida de hover)
-              <UserMenu />
+              <Link href="/perfil" className="text-magnolia-lilac py-2" title="Mi Perfil">
+                <User size={24} strokeWidth={1.5} />
+              </Link>
             ) : (
               <Link 
                 href="/login"
