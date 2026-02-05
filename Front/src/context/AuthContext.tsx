@@ -80,6 +80,16 @@ const fetchProfile = async (id: string, token: string, isAdmin?: boolean) => {
     localStorage.setItem("user", JSON.stringify(userData));
   } catch (error) {
     console.error("Error al traer perfil:", error);
+    // Si falla, usar al menos los datos del token decodificado
+    console.log("⚠️ Usando datos del token como fallback");
+    const fallbackUser = {
+      id,
+      email: "",
+      isAdmin,
+      username: "",
+    };
+    setUser(fallbackUser);
+    localStorage.setItem("user", JSON.stringify(fallbackUser));
   }
 };
 
