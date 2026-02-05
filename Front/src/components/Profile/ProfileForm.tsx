@@ -38,11 +38,11 @@ export const ProfileForm = ({ userData, onSaved }: ProfileFormProps) => {
 
     if (!userId) throw new Error("No se encontró el ID del usuario. Por favor, recarga la página.");
 
-    // Preparar los datos, asegurando que phone sea string
+    // Preparar los datos, asegurando que phone sea número (solo dígitos)
     const dataToSend = {
       name: form.username,
       username: form.username,
-      phone: form.phone ? String(form.phone).trim() : "", // Convertir a string
+      phone: form.phone ? Number(form.phone.replace(/\D/g, '')) : null, // Extraer solo dígitos y convertir a número
       address: form.address,
     };
 
