@@ -49,7 +49,16 @@ function UserMenu() {
 
   return (
     <div className="relative h-full flex items-center">
-      <button ref={buttonRef} onClick={() => setOpen((v) => !v)} className="text-magnolia-lilac py-2">
+      <button
+        type="button"
+        ref={buttonRef}
+        aria-expanded={open}
+        onClick={(e) => {
+          e.stopPropagation();
+          setOpen((v) => !v);
+        }}
+        className="text-magnolia-lilac py-2"
+      >
         <User size={24} strokeWidth={1.5} />
       </button>
 
