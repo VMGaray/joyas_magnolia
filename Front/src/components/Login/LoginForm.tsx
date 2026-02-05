@@ -69,9 +69,15 @@ export const LoginForm = () => {
       const cleanToken = token.replace(/^"|"$/g, "");
       await login(cleanToken);
 
+      // Esperar un poco para que localStorage se sincronice
+      await new Promise(resolve => setTimeout(resolve, 500));
+
       // Obtener usuario del localStorage
       const storedUser = localStorage.getItem("user");
       const parsedUser = storedUser ? JSON.parse(storedUser) : null;
+
+      console.log("👤 Usuario guardado en localStorage:", parsedUser);
+      console.log("🔐 isAdmin?", parsedUser?.isAdmin);
 
       // Mostrar modal primero
       if (parsedUser?.isAdmin) {
