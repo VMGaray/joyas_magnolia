@@ -43,8 +43,16 @@ function UserMenu() {
 
   const handleLogout = () => {
     setOpen(false);
-    logout();
-    notifyError("Sesión cerrada correctamente 👋");
+    try {
+      // debug log to check click
+      // console.log("Navbar: logout clicked");
+      logout();
+      // ensure redirect in case logout doesn't navigate
+      window.location.href = "/";
+      notifyError("Sesión cerrada correctamente 👋");
+    } catch (err) {
+      console.error("Error during navbar logout:", err);
+    }
   };
 
   return (
