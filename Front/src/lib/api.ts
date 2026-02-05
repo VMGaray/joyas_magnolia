@@ -19,7 +19,7 @@ export interface Subtype {
 }
 
 export interface BackendProduct {
-  id: number;
+  id: string; // UUID
   name: string;
   description: string;
   price: number;
@@ -70,7 +70,12 @@ export async function getProducts(filters?: ProductFilters): Promise<BackendProd
   const queryString = params.toString();
   const url = `${API_URL}/products${queryString ? `?${queryString}` : ""}`;
 
-  return apiFetch(url);
+  const res = await apiFetch(url);
+  // Backend returns a paginated object { data, total, page, limit, totalPages }
+  // but some endpoints may return directly an array. Normalize to array.
+  if (res && Array.isArray(res)) return res as BackendProduct[];
+  if (res && res.data && Array.isArray(res.data)) return res.data as BackendProduct[];
+  return [] as BackendProduct[];
 }
 
 export async function getCategories(): Promise<Category[]> {
@@ -111,4 +116,21 @@ export async function deleteProduct(id: number): Promise<void> {
   return apiFetch(`${API_URL}/products/${id}`, {
     method: "DELETE",
   });
+}
+
+// Orders
+export async function createOrder(data: { userId: string; items: { productId: string; quantity: number }[]; address?: any; }): Promise<any> {
+  return apiFetch(`${API_URL}/order`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+// Mercado Pago
+export async function createPreference(data: { orderId: string; userId: string }): Promise<any> {
+  const res = await apiFetch(`${API_URL}/mercado-pago/create-preference`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+  return res;
 }

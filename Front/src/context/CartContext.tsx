@@ -1,9 +1,10 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from "react";
+import { useAuth } from "./AuthContext";
 
 type CartItem = {
-  id: number;
+  id: string; // UUID
   name: string;
   price: number;
   image: string;
@@ -13,8 +14,8 @@ type CartItem = {
 type CartContextType = {
   items: CartItem[];
   addToCart: (product: any) => void;
-  removeFromCart: (id: number) => void;
-  removeOne: (id: number) => void; // <--- NUEVA FUNCIÓN
+  removeFromCart: (id: string) => void;
+  removeOne: (id: string) => void; // <--- NUEVA FUNCIÓN
   totalPrice: number;
   totalItems: number;
   isCartOpen: boolean;
@@ -24,15 +25,23 @@ type CartContextType = {
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
+  const { isLoggedIn } = useAuth();
   const [items, setItems] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
 
   useEffect(() => {
-    const savedCart = localStorage.getItem("magnolia-cart");
-    if (savedCart) {
-      setItems(JSON.parse(savedCart));
+    // Solo cargar carrito si está logueado
+    if (isLoggedIn) {
+      const savedCart = localStorage.getItem("magnolia-cart");
+      if (savedCart) {
+        setItems(JSON.parse(savedCart));
+      }
+    } else {
+      // Limpiar carrito si no está logueado
+      setItems([]);
+      localStorage.removeItem("magnolia-cart");
     }
-  }, []);
+  }, [isLoggedIn]);
 
   useEffect(() => {
     localStorage.setItem("magnolia-cart", JSON.stringify(items));
@@ -41,19 +50,19 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   // SUMAR (Si ya existe suma 1, sino lo crea)
   const addToCart = (product: any) => {
     setItems((prev) => {
-      const existing = prev.find((item) => item.id === product.id);
+      const existing = prev.find((item) => item.id === String(product.id));
       if (existing) {
         return prev.map((item) =>
-          item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
+          item.id === String(product.id) ? { ...item, quantity: item.quantity + 1 } : item
         );
       }
-      return [...prev, { ...product, quantity: 1 }];
+      return [...prev, { ...product, id: String(product.id), quantity: 1 }];
     });
     setIsCartOpen(true);
   };
 
   // RESTAR DE A UNO (Nuevo)
-  const removeOne = (id: number) => {
+  const removeOne = (id: string) => {
     setItems((prev) => {
       return prev.map((item) => {
         if (item.id === id) {
@@ -65,7 +74,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   };
 
   // ELIMINAR TODO EL ITEM (Tacho de basura)
-  const removeFromCart = (id: number) => {
+  const removeFromCart = (id: string) => {
     setItems((prev) => prev.filter((item) => item.id !== id));
   };
 

@@ -21,45 +21,68 @@ export const ProfileForm = ({ userData, onSaved }: ProfileFormProps) => {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const { token } = useAuth();
+
   const handleChange = (field: keyof UserData, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSaving(true);
-    setMessage(null);
-    setError(null);
+  e.preventDefault();
+  setSaving(true);
+  setMessage(null);
+  setError(null);
 
-    try {
-           
-      const res = await fetch("http://localhost:4000/auth/profile/{id}", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
+  try {
+    // Intentar obtener el ID desde localStorage
+    const storedUser = localStorage.getItem("user");
+    const parsedUser = storedUser ? JSON.parse(storedUser) : null;
+    let userId = parsedUser?.id;
 
-      const text = await res.text();
-      let data: any;
-      try {
-        data = JSON.parse(text);
-      } catch {
-        data = { message: text };
+    // Si no está en localStorage, intentar decodificar el token
+    if (!userId) {
+      const storedToken = localStorage.getItem("token");
+      if (storedToken) {
+        const decoded: any = JSON.parse(atob(storedToken.split(".")[1]));
+        userId = decoded?.id;
       }
-
-      if (!res.ok) {
-        const serverError = Array.isArray(data.message) ? data.message.join(", ") : data.message;
-        throw new Error(serverError || "No se pudo guardar los cambios.");
-      }
-
-      onSaved(form);
-      setMessage("Datos actualizados correctamente.");
-    } catch (err: any) {
-      setError(err?.message || "Error inesperado.");
-    } finally {
-      setSaving(false);
     }
-  };
+
+    if (!userId) throw new Error("No se encontró el ID del usuario.");
+
+    const res = await fetch(`http://localhost:4000/auth/profile/${userId}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+      },
+      body: JSON.stringify(form),
+    });
+
+    const text = await res.text();
+    let data: any;
+    try {
+      data = JSON.parse(text);
+    } catch {
+      data = { message: text };
+    }
+
+    if (!res.ok) {
+      const serverError = Array.isArray(data.message) ? data.message.join(", ") : data.message;
+      throw new Error(serverError || "No se pudo guardar los cambios.");
+    }
+
+    // Actualizar localStorage y estado
+    localStorage.setItem("user", JSON.stringify(data));
+    onSaved(data);
+    setMessage("Datos actualizados correctamente.");
+  } catch (err: any) {
+    setError(err?.message || "Error inesperado.");
+  } finally {
+    setSaving(false);
+  }
+};
+
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">

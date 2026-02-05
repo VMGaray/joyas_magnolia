@@ -4,11 +4,14 @@ import Link from "next/link";
 import { Mail, Lock, User, ArrowRight, Loader2, Phone } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { WelcomeModal } from "../Login/WelcomeModal";
 
 export const RegisterForm = () => {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [welcomeMessage, setWelcomeMessage] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string>("");
 
   const [formData, setFormData] = useState({
     firstName: "",
@@ -68,8 +71,15 @@ export const RegisterForm = () => {
         throw new Error(serverError || "Ocurrió un error al registrarse");
       }
 
-      alert("¡Cuenta creada con éxito! Ahora iniciá sesión.");
-      router.push("/login"); // ✅ corregido
+      // Mostrar modal de bienvenida
+      const fullNameForWelcome = `${formData.firstName} ${formData.lastName}`.trim();
+      setWelcomeMessage("¡Cuenta creada con éxito! ✨");
+      setUserName(fullNameForWelcome);
+
+      // Redirigir después de 2 segundos
+      setTimeout(() => {
+        router.push("/login");
+      }, 2000);
 
     } catch (err: any) {
       console.error(err);
@@ -185,6 +195,15 @@ export const RegisterForm = () => {
                 <Link href="/login" className="text-magnolia-lilac font-bold hover:underline">Ingresar</Link>
             </p>
         </div>
+
+        {/* Modal de bienvenida */}
+        {welcomeMessage && (
+          <WelcomeModal 
+            message={welcomeMessage} 
+            name={userName}
+            onClose={() => setWelcomeMessage(null)}
+          />
+        )}
     </div>
   );
 };

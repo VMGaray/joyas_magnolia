@@ -4,9 +4,13 @@ import { useCart } from "../../context/CartContext";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft, Lock } from "lucide-react";
+import { useState } from "react";
+import { createOrder, createPreference } from "@/lib/api";
 
 export default function CheckoutPage() {
   const { items, totalPrice } = useCart();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   if (items.length === 0) {
     return (
@@ -122,10 +126,50 @@ export default function CheckoutPage() {
             </div>
 
             {/* BOTÓN DE PAGO (Este se conectará al Backend) */}
-            <button className="w-full bg-blue-500 text-white py-4 rounded-sm font-bold text-sm uppercase tracking-widest hover:bg-blue-600 transition-colors shadow-md flex items-center justify-center gap-2">
+            <form onSubmit={async (e) => {
+              e.preventDefault();
+              setError(null);
+              setLoading(true);
+              // Require logged user
+              const storedUser = localStorage.getItem('user');
+              const user = storedUser ? JSON.parse(storedUser) : null;
+              if (!user) {
+                setLoading(false);
+                setError('Debes iniciar sesión para completar la compra');
+                return;
+              }
+
+              // Build order payload
+              const orderPayload = {
+                userId: user.id,
+                items: items.map((it: any) => ({ productId: it.id, quantity: it.quantity })),
+                address: null,
+              };
+
+              try {
+                const createdOrder = await createOrder(orderPayload);
+                // create preference
+                const pref = await createPreference({ orderId: createdOrder.id, userId: user.id });
+                // Redirect to Mercado Pago init_point
+                const redirectUrl = pref?.init_point || pref?.sandbox_init_point;
+                if (redirectUrl) {
+                  window.location.href = redirectUrl;
+                } else {
+                  setError('No se pudo obtener la URL de pago');
+                }
+              } catch (err: any) {
+                console.error('Checkout error', err);
+                setError(err?.message || 'Error al procesar el pago');
+              } finally {
+                setLoading(false);
+              }
+            }}>
+              <button type="submit" disabled={loading} className={`w-full py-4 rounded-sm font-bold text-sm uppercase tracking-widest transition-colors shadow-md flex items-center justify-center gap-2 ${loading ? 'bg-gray-300 text-gray-600' : 'bg-blue-500 text-white hover:bg-blue-600'}`}>
                 <Lock size={16} />
-                Pagar con Mercado Pago
-            </button>
+                {loading ? 'Procesando...' : 'Pagar con Mercado Pago'}
+              </button>
+              {error && <p className="text-sm text-red-600 mt-3">{error}</p>}
+            </form>
             
             <p className="text-center text-xs text-gray-400 mt-4 leading-relaxed">
                 Tus datos personales se utilizarán para procesar tu pedido y mejorar tu experiencia en la web.

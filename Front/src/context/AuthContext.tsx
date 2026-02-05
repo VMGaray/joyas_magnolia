@@ -38,34 +38,38 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
 
   const decodeToken = (token: string): User | null => {
-    try {
-      const decoded: any = jwtDecode(token);
-      return {
-        id: decoded.id,
-        email: decoded.email,
-        isAdmin: decoded.isAdmin,
-      };
-    } catch (error) {
-      console.error("Error al decodificar el token:", error);
-      return null;
-    }
-  };
+  try {
+    const decoded: any = jwtDecode(token);
+    console.log("🔍 Token decodificado:", decoded);
+    return {
+      id: decoded.id,
+      email: decoded.email,
+      isAdmin: decoded.isAdmin,
+      username: decoded.name || decoded.username || "", // 👈 nombre completo
+    };
+  } catch (error) {
+    console.error("Error al decodificar el token:", error);
+    return null;
+  }
+};
 
-  const fetchProfile = async (id: string, token: string) => {
-    try {
-      const res = await fetch(`http://localhost:4000/auth/profile/${id}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      if (!res.ok) throw new Error("No se pudo obtener el perfil");
-      const profile = await res.json();
-      setUser(profile);
-      localStorage.setItem("user", JSON.stringify(profile));
-    } catch (error) {
-      console.error("Error al traer perfil:", error);
-    }
-  };
+
+const fetchProfile = async (id: string, token: string) => {
+  try {
+    const res = await fetch(`http://localhost:4000/auth/profile/${id}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    if (!res.ok) throw new Error("No se pudo obtener el perfil");
+    const profile = await res.json();
+    console.log("📦 Perfil recibido:", profile);
+    setUser(profile);
+    localStorage.setItem("user", JSON.stringify(profile));
+  } catch (error) {
+    console.error("Error al traer perfil:", error);
+  }
+};
 
   const checkLogin = () => {
     const storedToken = localStorage.getItem("token");
@@ -85,18 +89,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     checkLogin();
   }, []);
 
-  const login = async (token: string) => {
-    const decodedUser = decodeToken(token);
-    localStorage.setItem("token", token);
-    setIsLoggedIn(true);
-    setToken(token);
+  
+const login = async (token: string) => {
+  const decodedUser = decodeToken(token);
+  console.log("🔐 Usuario decodificado:", decodedUser);
 
-    if (decodedUser?.id) {
-      await fetchProfile(decodedUser.id, token);
-    } else {
-      setUser(decodedUser);
-    }
-  };
+  localStorage.setItem("token", token);
+  setIsLoggedIn(true);
+  setToken(token);
+
+  // Siempre traer el perfil completo del backend
+  if (decodedUser?.id) {
+    console.log("📡 Llamando a /auth/profile con ID:", decodedUser.id);
+    await fetchProfile(decodedUser.id, token);
+  } else {
+    setUser(decodedUser);
+    localStorage.setItem("user", JSON.stringify(decodedUser));
+  }
+};
+
+
 
   const logout = () => {
     localStorage.removeItem("token");

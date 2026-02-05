@@ -1,9 +1,10 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from "react";
+import { useAuth } from "./AuthContext";
 
 type Product = {
-  id: number;
+  id: string;
   name: string;
   price: number;
   image: string;
@@ -13,21 +14,28 @@ type Product = {
 type WishlistContextType = {
   wishlistItems: Product[];
   toggleWishlist: (product: Product) => void;
-  isInWishlist: (id: number) => boolean;
+  isInWishlist: (id: string) => boolean;
 };
 
 const WishlistContext = createContext<WishlistContextType | undefined>(undefined);
 
 export function WishlistProvider({ children }: { children: React.ReactNode }) {
+  const { isLoggedIn } = useAuth();
   const [wishlistItems, setWishlistItems] = useState<Product[]>([]);
 
-  // Cargar de memoria al iniciar
+  // Cargar de memoria solo si está logueado
   useEffect(() => {
-    const saved = localStorage.getItem("magnolia-wishlist");
-    if (saved) {
-      setWishlistItems(JSON.parse(saved));
+    if (isLoggedIn) {
+      const saved = localStorage.getItem("magnolia-wishlist");
+      if (saved) {
+        setWishlistItems(JSON.parse(saved));
+      }
+    } else {
+      // Limpiar wishlist si no está logueado
+      setWishlistItems([]);
+      localStorage.removeItem("magnolia-wishlist");
     }
-  }, []);
+  }, [isLoggedIn]);
 
   // Guardar en memoria al cambiar
   useEffect(() => {
@@ -47,7 +55,7 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
-  const isInWishlist = (id: number) => {
+  const isInWishlist = (id: string) => {
     return wishlistItems.some((item) => item.id === id);
   };
 

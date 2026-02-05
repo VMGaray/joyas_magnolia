@@ -51,6 +51,15 @@ export function adaptBackendProduct(backendProduct: BackendProduct): FrontendPro
     ? backendProduct.imageUrl
     : defaultImage;
 
+  // support backendProduct.category/productType as either string or object { id, name }
+  const productTypeName = typeof backendProduct.productType === 'string'
+    ? backendProduct.productType
+    : (backendProduct.productType as any)?.name;
+
+  const categoryName = typeof backendProduct.category === 'string'
+    ? backendProduct.category
+    : (backendProduct.category as any)?.name;
+
   return {
     id: backendProduct.id,
     name: backendProduct.name,
@@ -59,10 +68,10 @@ export function adaptBackendProduct(backendProduct: BackendProduct): FrontendPro
     image: image,
     rating: 5,
     description: backendProduct.description,
-    category: toSlug(backendProduct.productType?.name || 'sin-tipo'),
-    material: categoryToMaterial(backendProduct.category?.name || 'sin-categoria'),
+    category: toSlug(productTypeName || 'sin-tipo'),
+    material: categoryToMaterial(categoryName || 'sin-categoria'),
     images: [image],
-    stock: typeof backendProduct.stock === "number" ? backendProduct.stock : 0, // ✅ agregado
+    stock: typeof backendProduct.stock === "number" ? backendProduct.stock : 0,
   };
 }
 
