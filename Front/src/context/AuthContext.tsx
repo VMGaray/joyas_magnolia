@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
-import { jwtDecode } from "jwt-decode";
+import jwtDecode from "jwt-decode";
 
 interface User {
   id: string;
@@ -41,11 +41,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   try {
     const decoded: any = jwtDecode(token);
     console.log("🔍 Token decodificado:", decoded);
+
+    // Extraer roles si vienen en el token y derivar isAdmin
+    const roles: string[] = decoded.roles || [];
+    const isAdminFromRoles = Array.isArray(roles) && roles.includes("admin");
+
     return {
       id: decoded.id,
       email: decoded.email,
-      isAdmin: decoded.isAdmin,
-      username: decoded.name || decoded.username || "", // 👈 nombre completo
+      isAdmin: decoded.isAdmin ?? isAdminFromRoles,
+      username: decoded.name || decoded.username || "", // nombre completo
     };
   } catch (error) {
     console.error("Error al decodificar el token:", error);
