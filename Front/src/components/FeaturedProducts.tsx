@@ -3,11 +3,38 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Star, ShoppingBag } from "lucide-react";
-import { useProducts } from "@/lib/hooks";
 import { adaptBackendProducts } from "@/lib/adapters";
+import { useState, useEffect } from "react";
 
 export default function FeaturedProducts() {
-  const { products: backendProducts, isLoading, isError } = useProducts();
+  const [backendProducts, setBackendProducts] = useState<any[] | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isError, setIsError] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    setIsLoading(true);
+    fetch("http://localhost:4000/product-ratings/featured?limit=3")
+      .then((res) => {
+        if (!res.ok) throw new Error("Error fetching featured");
+        return res.json();
+      })
+      .then((data) => {
+        if (!mounted) return;
+        setBackendProducts(data || []);
+        setIsLoading(false);
+      })
+      .catch((err) => {
+        console.error("Error loading featured products:", err);
+        if (!mounted) return;
+        setIsError(true);
+        setIsLoading(false);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   if (isLoading) {
     return (

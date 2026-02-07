@@ -2,12 +2,14 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { ShoppingCart, ChevronDown, Heart, User, LogOut, Settings } from "lucide-react";
+import { ShoppingCart, ChevronDown, Heart, User } from "lucide-react";
 import { MENU_ITEMS } from "@/data/menuData"; 
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
 import { useAuth } from "@/context/AuthContext";
 import { notifySuccess, notifyError } from "@/components/helpers/Toast"; // 👈 importamos helpers
+
+// UserMenu removed - the user icon will link directly to the profile when logged in
 
 export default function Navbar() {
   const { toggleCart, totalItems } = useCart();
@@ -16,10 +18,6 @@ export default function Navbar() {
 
   const { isLoggedIn, logout } = useAuth(); 
 
-  const handleLogout = () => {
-    logout();
-    notifyError("Sesión cerrada correctamente 👋"); // 👈 toast de despedida
-  };
 
   return (
     <header className="w-full bg-white pt-6 pb-0 border-b border-gray-100 relative z-50">
@@ -54,33 +52,9 @@ export default function Navbar() {
             
             {/* --- LÓGICA DE USUARIO / LOGIN --- */}
             {isLoggedIn ? (
-              <div className="relative group h-full flex items-center"> 
-                <Link href="/perfil" className="text-magnolia-lilac py-2">
-                  <User size={24} strokeWidth={1.5} />
-                </Link>
-
-                {/* Menú Flotante */}
-                <div className="absolute right-0 top-[80%] pt-6 w-48 invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-200 z-50">
-                  <div className="bg-white border border-gray-100 shadow-lg rounded-sm flex flex-col overflow-hidden">
-                    
-                    <Link 
-                      href="/perfil" 
-                      className="px-4 py-3 text-sm text-gray-600 hover:bg-gray-50 hover:text-magnolia-lilac flex items-center gap-2 transition-colors border-b border-gray-50"
-                    >
-                      <Settings size={16} />
-                      Ir a mi Perfil
-                    </Link>
-
-                    <button 
-                      onClick={handleLogout} // 👈 usamos handleLogout
-                      className="w-full text-left px-4 py-3 text-sm text-red-400 hover:bg-red-50 flex items-center gap-2 transition-colors"
-                    >
-                      <LogOut size={16} />
-                      Cerrar Sesión
-                    </button>
-                  </div>
-                </div>
-              </div>
+              <Link href="/perfil" className="text-magnolia-lilac py-2" title="Mi Perfil">
+                <User size={24} strokeWidth={1.5} />
+              </Link>
             ) : (
               <Link 
                 href="/login"

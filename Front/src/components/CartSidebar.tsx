@@ -44,9 +44,9 @@ export default function CartSidebar() {
                 <ShoppingBag size={48} className="opacity-20" />
                 <p>Tu carrito está vacío.</p>
                 {/* Botón Seguir Comprando (Vacío) */}
-                <button onClick={toggleCart} className="text-magnolia-dark underline text-sm hover:text-magnolia-lilac">
+                <Link href="/" onClick={toggleCart} className="text-magnolia-dark underline text-sm hover:text-magnolia-lilac">
                     Empezar a comprar
-                </button>
+                </Link>
               </div>
             ) : (
               items.map((item) => (

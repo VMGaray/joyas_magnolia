@@ -21,7 +21,7 @@ export const ProfileForm = ({ userData, onSaved }: ProfileFormProps) => {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const { token } = useAuth();
+  const { token, user } = useAuth();
 
   const handleChange = (field: keyof UserData, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -34,29 +34,25 @@ export const ProfileForm = ({ userData, onSaved }: ProfileFormProps) => {
   setError(null);
 
   try {
-    // Intentar obtener el ID desde localStorage
-    const storedUser = localStorage.getItem("user");
-    const parsedUser = storedUser ? JSON.parse(storedUser) : null;
-    let userId = parsedUser?.id;
+    const userId = user?.id;
 
-    // Si no está en localStorage, intentar decodificar el token
-    if (!userId) {
-      const storedToken = localStorage.getItem("token");
-      if (storedToken) {
-        const decoded: any = JSON.parse(atob(storedToken.split(".")[1]));
-        userId = decoded?.id;
-      }
-    }
+    if (!userId) throw new Error("No se encontró el ID del usuario. Por favor, recarga la página.");
 
-    if (!userId) throw new Error("No se encontró el ID del usuario.");
+    // Preparar los datos, asegurando que phone sea número (solo dígitos)
+    const dataToSend = {
+      name: form.username,
+      username: form.username,
+      phone: form.phone ? Number(form.phone.replace(/\D/g, '')) : null, // Extraer solo dígitos y convertir a número
+      address: form.address,
+    };
 
     const res = await fetch(`http://localhost:4000/auth/profile/${userId}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+        Authorization: `Bearer ${token || ""}`,
       },
-      body: JSON.stringify(form),
+      body: JSON.stringify(dataToSend),
     });
 
     const text = await res.text();

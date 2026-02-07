@@ -41,11 +41,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   try {
     const decoded: any = jwtDecode(token);
     console.log("🔍 Token decodificado:", decoded);
+
+    // Extraer roles si vienen en el token y derivar isAdmin
+    const roles: string[] = decoded.roles || [];
+    const isAdminFromRoles = Array.isArray(roles) && roles.includes("admin");
+
     return {
       id: decoded.id,
       email: decoded.email,
-      isAdmin: decoded.isAdmin,
-      username: decoded.name || decoded.username || "", // 👈 nombre completo
+      isAdmin: decoded.isAdmin ?? isAdminFromRoles,
+      username: decoded.name || decoded.username || "", // nombre completo
     };
   } catch (error) {
     console.error("Error al decodificar el token:", error);
@@ -54,7 +59,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 };
 
 
-const fetchProfile = async (id: string, token: string) => {
+const fetchProfile = async (id: string, token: string, isAdmin?: boolean) => {
   try {
     const res = await fetch(`http://localhost:4000/auth/profile/${id}`, {
       headers: {
@@ -64,10 +69,27 @@ const fetchProfile = async (id: string, token: string) => {
     if (!res.ok) throw new Error("No se pudo obtener el perfil");
     const profile = await res.json();
     console.log("📦 Perfil recibido:", profile);
-    setUser(profile);
-    localStorage.setItem("user", JSON.stringify(profile));
+    
+    // Fusionar datos del perfil con isAdmin y id del token
+    const userData = {
+      ...profile,
+      isAdmin,
+      id,
+    };
+    setUser(userData);
+    localStorage.setItem("user", JSON.stringify(userData));
   } catch (error) {
     console.error("Error al traer perfil:", error);
+    // Si falla, usar al menos los datos del token decodificado
+    console.log("⚠️ Usando datos del token como fallback");
+    const fallbackUser = {
+      id,
+      email: "",
+      isAdmin,
+      username: "",
+    };
+    setUser(fallbackUser);
+    localStorage.setItem("user", JSON.stringify(fallbackUser));
   }
 };
 
@@ -98,10 +120,10 @@ const login = async (token: string) => {
   setIsLoggedIn(true);
   setToken(token);
 
-  // Siempre traer el perfil completo del backend
+  // Siempre traer el perfil completo del backend, pasando isAdmin desde el token
   if (decodedUser?.id) {
     console.log("📡 Llamando a /auth/profile con ID:", decodedUser.id);
-    await fetchProfile(decodedUser.id, token);
+    await fetchProfile(decodedUser.id, token, decodedUser.isAdmin);
   } else {
     setUser(decodedUser);
     localStorage.setItem("user", JSON.stringify(decodedUser));
