@@ -1,5 +1,6 @@
 import { ProductRating } from 'src/product-ratings/entities/product-rating.entity';
 import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import { Exclude } from 'class-transformer';
 import { Order } from '../../order/entities/order.entity';
 
 @Entity({ name: 'auth' })
@@ -16,6 +17,7 @@ export class Auth {
   @Column({ type: 'varchar', length: 50, nullable: false })
   email: string;
 
+  @Exclude()
   @Column({ type: 'varchar', length: 100, nullable: false })
   password: string;
 

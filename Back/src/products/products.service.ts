@@ -7,6 +7,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Product } from './entities/product.entity';
 import { CreateProductDto } from './dto/create-product.dto';
+import { UpdateProductDto } from './dto/update-product.dto';
 import { FilterProductsDto } from './dto/filter-products.dto';
 import { FileUploadService } from 'src/image-upload/image-upload.service';
 import { BraceletsSubtypes, Category, ChainsSubtypes, EarringsSubtypes, PendantsSubtypes, ProductType, RingsSubtypes } from './clasification.enum';
@@ -17,7 +18,7 @@ export class ProductsService {
     @InjectRepository(Product)
     private productRepository: Repository<Product>,
     private readonly fileUploadService: FileUploadService,
-  ) {}
+  ) { }
 
   async create(createProductDto: CreateProductDto, file?: Express.Multer.File) {
     const { ...productData } = createProductDto;
@@ -49,6 +50,17 @@ export class ProductsService {
       imageUrl,
     });
 
+    return this.productRepository.save(product);
+  }
+
+  async update(id: string, updateProductDto: UpdateProductDto) {
+    const product = await this.productRepository.findOne({ where: { id } });
+
+    if (!product) {
+      throw new NotFoundException(`Producto con ID ${id} no encontrado`);
+    }
+
+    Object.assign(product, updateProductDto);
     return this.productRepository.save(product);
   }
 

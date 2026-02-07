@@ -17,7 +17,6 @@ const config = {
   synchronize: true,
   //dropSchema: true,
   logging: ['error'],
-  dropSchema: true,
   entities: [join(__dirname, '/../**/*.entity{.ts,.js}')],
   migrations: [join(__dirname, '/../migrations/*{.ts,.js}')],
   extra: {
