@@ -38,7 +38,7 @@ async function bootstrap() {
   );
 
   const swaggerConfig = new DocumentBuilder()
-    .setTitle('Aidi')
+    .setTitle('Joyas Magnolia')
     .setDescription('Api de servicios para Magnolia Joyas')
     .setVersion('1.0')
     .addBearerAuth()

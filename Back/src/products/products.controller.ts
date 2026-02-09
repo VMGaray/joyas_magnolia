@@ -91,6 +91,15 @@ export class ProductsController {
     return this.productsService.getSubtypes(type);
   }
 
+  @Get(':id')
+  @ApiOperation({ summary: 'Obtener un producto por ID' })
+  @ApiParam({ name: 'id', description: 'ID del producto' })
+  @ApiResponse({ status: 200, description: 'Producto obtenido exitosamente' })
+  @ApiResponse({ status: 404, description: 'Producto no encontrado' })
+  findOne(@Param('id') id: string) {
+    return this.productsService.findOne(id);
+  }
+
   @Get()
   @ApiOperation({
     summary: 'Obtener todos los productos con filtros opcionales y paginación',

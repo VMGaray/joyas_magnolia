@@ -54,14 +54,20 @@ export class ProductsService {
   }
 
   async update(id: string, updateProductDto: UpdateProductDto) {
+    const product = await this.findOne(id);
+
+    Object.assign(product, updateProductDto);
+    return this.productRepository.save(product);
+  }
+
+  async findOne(id: string) {
     const product = await this.productRepository.findOne({ where: { id } });
 
     if (!product) {
       throw new NotFoundException(`Producto con ID ${id} no encontrado`);
     }
 
-    Object.assign(product, updateProductDto);
-    return this.productRepository.save(product);
+    return product;
   }
 
   async findAll(filters: FilterProductsDto) {
