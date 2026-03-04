@@ -1,4 +1,4 @@
-import { Package, Loader2, AlertCircle } from "lucide-react";
+import { Package, Loader2, AlertCircle, ShoppingBag } from "lucide-react";
 import Link from "next/link";
 import { useOrders } from "@/lib/hooks";
 
@@ -29,7 +29,6 @@ const statusColors: Record<string, string> = {
 export const OrdersList = () => {
   const { orders, isLoading, isError } = useOrders();
 
-  // Filtrar solo las órdenes del usuario actual (el backend debería hacer esto con JWT)
   const userOrders = Array.isArray(orders) ? orders : [];
 
   if (isLoading) {
@@ -45,21 +44,8 @@ export const OrdersList = () => {
     );
   }
 
-  if (isError) {
-    return (
-      <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-        <h3 className="font-serif text-2xl text-gray-900 mb-6 border-b border-gray-100 pb-4">
-          Historial de Compras
-        </h3>
-        <div className="flex flex-col items-center justify-center py-20 bg-red-50 rounded-lg border border-red-200">
-          <AlertCircle className="text-red-500 mb-4" size={32} />
-          <p className="text-red-700 font-medium">Error al cargar las órdenes</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!userOrders || userOrders.length === 0) {
+  // Si hay error o no hay órdenes, mostramos un estado vacío amigable
+  if (isError || userOrders.length === 0) {
     return (
       <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
         <h3 className="font-serif text-2xl text-gray-900 mb-6 border-b border-gray-100 pb-4">
@@ -67,7 +53,7 @@ export const OrdersList = () => {
         </h3>
         <div className="flex flex-col items-center justify-center py-20 bg-gray-50 rounded-lg border border-dashed border-gray-300">
           <div className="bg-white p-4 rounded-full shadow-sm mb-4">
-            <Package className="text-gray-300" size={32} />
+            <ShoppingBag className="text-gray-300" size={32} />
           </div>
           <p className="text-gray-600 font-medium text-lg mb-1">Aún no has realizado ninguna compra.</p>
           <p className="text-gray-400 text-sm mb-6 max-w-sm text-center">
@@ -75,7 +61,7 @@ export const OrdersList = () => {
           </p>
           <Link
             href="/"
-            className="px-6 py-2 bg-white border border-purple-200 text-purple-700 font-bold rounded-md hover:bg-purple-50 text-xs uppercase tracking-widest transition-colors"
+            className="px-8 py-3 bg-magnolia-dark text-white font-bold rounded-sm hover:bg-magnolia-lilac text-xs uppercase tracking-widest transition-colors shadow-md"
           >
             Ir a la tienda
           </Link>
@@ -94,12 +80,12 @@ export const OrdersList = () => {
         {userOrders.map((order: Order) => (
           <div
             key={order.id}
-            className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+            className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow bg-white"
           >
             <div className="flex justify-between items-start mb-3">
               <div>
-                <p className="text-sm text-gray-500">Pedido ID: {order.id.slice(0, 8)}</p>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-500 italic">Pedido ID: #{order.id.slice(0, 8).toUpperCase()}</p>
+                <p className="text-sm text-gray-600 font-medium">
                   {new Date(order.createdAt).toLocaleDateString("es-AR", {
                     year: "numeric",
                     month: "long",
@@ -108,22 +94,22 @@ export const OrdersList = () => {
                 </p>
               </div>
               <span
-                className={`px-3 py-1 rounded text-xs font-semibold ${
-                  statusColors[order.status] || "bg-gray-100"
+                className={`px-3 py-1 rounded-full text-[10px] uppercase tracking-tighter font-bold ${
+                  statusColors[order.status] || "bg-gray-100 text-gray-600"
                 }`}
               >
                 {statusLabels[order.status] || order.status}
               </span>
             </div>
 
-            {/* Detalles del pedido */}
+            {/* Detalles rápidos de productos */}
             {order.items && order.items.length > 0 && (
               <div className="mb-3 text-sm">
-                <p className="text-gray-600 font-medium mb-1">Productos:</p>
-                <ul className="ml-4 space-y-1 text-gray-500">
+                <ul className="space-y-1 text-gray-500">
                   {order.items.map((item: any, idx: number) => (
-                    <li key={idx}>
-                      {item.product?.name || "Producto"} x{item.quantity}
+                    <li key={idx} className="flex gap-2 items-center">
+                      <div className="w-1 h-1 bg-gray-300 rounded-full" />
+                      {item.product?.name || "Producto"} <span className="text-xs text-gray-400">(x{item.quantity})</span>
                     </li>
                   ))}
                 </ul>
@@ -132,14 +118,17 @@ export const OrdersList = () => {
 
             {/* Total y acciones */}
             <div className="flex justify-between items-center pt-3 border-t border-gray-100">
-              <p className="font-semibold text-magnolia-dark">
-                Total: ${Number(order.totalPrice).toLocaleString("es-AR")}
+              <p className="font-bold text-magnolia-dark">
+                {/* PRECIO CORREGIDO (* 1000) */}
+                Total: ${(Number(order.totalPrice) * 1000).toLocaleString("es-AR", {
+                  minimumFractionDigits: 0,
+                })}
               </p>
               <Link
                 href={`/perfil/orden/${order.id}`}
-                className="text-magnolia-lilac hover:text-magnolia-dark text-sm font-medium transition"
+                className="text-magnolia-lilac hover:text-magnolia-dark text-xs font-bold uppercase tracking-widest transition-colors flex items-center gap-1"
               >
-                Ver detalles →
+                Ver detalles <ChevronRight size={14} />
               </Link>
             </div>
           </div>
@@ -148,3 +137,8 @@ export const OrdersList = () => {
     </div>
   );
 };
+
+// Pequeño helper para el icono del final
+const ChevronRight = ({ size }: { size: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+);

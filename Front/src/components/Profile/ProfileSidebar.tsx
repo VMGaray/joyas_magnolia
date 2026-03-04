@@ -19,8 +19,11 @@ export const ProfileSidebar = ({
     <aside className="w-full md:w-64 flex-shrink-0">
       <div className="bg-white border border-gray-100 rounded-lg p-4 sticky top-24 shadow-sm">
         <div className="mb-6 px-4 pt-2">
-          <h2 className="font-serif text-xl text-gray-900 truncate">Hola, {displayName.split(" ")[0]}</h2>
-          <p className="text-xs text-gray-400 truncate mt-1">{displayEmail}</p>
+          {/* Usamos font-serif y el color oscuro de Magnolia */}
+          <h2 className="font-serif text-xl text-magnolia-dark truncate">
+            Hola, {displayName.split(" ")[0]}
+          </h2>
+          <p className="text-xs text-gray-400 truncate mt-1 italic">{displayEmail}</p>
         </div>
 
         <nav className="space-y-1">
@@ -28,7 +31,7 @@ export const ProfileSidebar = ({
             onClick={() => setActiveTab("profile")}
             className={`w-full flex items-center gap-3 px-4 py-3 text-sm transition-colors rounded-md ${
               activeTab === "profile"
-                ? "bg-purple-50 text-purple-700 font-medium"
+                ? "bg-magnolia-light text-magnolia-dark font-bold" // ✅ Cambiado a colores Magnolia
                 : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
             }`}
           >
@@ -40,7 +43,7 @@ export const ProfileSidebar = ({
             onClick={() => setActiveTab("orders")}
             className={`w-full flex items-center gap-3 px-4 py-3 text-sm transition-colors rounded-md ${
               activeTab === "orders"
-                ? "bg-purple-50 text-purple-700 font-medium"
+                ? "bg-magnolia-light text-magnolia-dark font-bold" // ✅ Cambiado a colores Magnolia
                 : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
             }`}
           >
@@ -52,7 +55,7 @@ export const ProfileSidebar = ({
             onClick={() => setActiveTab("security")}
             className={`w-full flex items-center gap-3 px-4 py-3 text-sm transition-colors rounded-md ${
               activeTab === "security"
-                ? "bg-purple-50 text-purple-700 font-medium"
+                ? "bg-magnolia-light text-magnolia-dark font-bold" // ✅ Cambiado a colores Magnolia
                 : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
             }`}
           >
@@ -64,7 +67,7 @@ export const ProfileSidebar = ({
 
           <button
             onClick={logout}
-            className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-500 hover:bg-red-50 transition-colors rounded-md"
+            className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-500 hover:bg-red-50 transition-colors rounded-md font-medium"
           >
             <LogOut size={18} />
             Cerrar Sesión

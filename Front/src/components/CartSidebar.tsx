@@ -1,9 +1,9 @@
 "use client";
 
 import { useCart } from "../context/CartContext";
-import { X, Trash2, ShoppingBag, Plus, Minus, ArrowLeft } from "lucide-react"; // Importamos flechas y signos
+import { X, Trash2, ShoppingBag, Plus, Minus, ArrowLeft } from "lucide-react"; 
 import Image from "next/image";
-import Link from "next/link"; // Necesario para redirigir
+import Link from "next/link"; 
 
 export default function CartSidebar() {
   const { isCartOpen, toggleCart, items, removeFromCart, addToCart, removeOne, totalPrice } = useCart();
@@ -43,7 +43,6 @@ export default function CartSidebar() {
               <div className="flex flex-col items-center justify-center h-full text-gray-400 space-y-4">
                 <ShoppingBag size={48} className="opacity-20" />
                 <p>Tu carrito está vacío.</p>
-                {/* Botón Seguir Comprando (Vacío) */}
                 <Link href="/" onClick={toggleCart} className="text-magnolia-dark underline text-sm hover:text-magnolia-lilac">
                     Empezar a comprar
                 </Link>
@@ -95,9 +94,12 @@ export default function CartSidebar() {
                         </button>
                       </div>
 
-                      {/* Precio Total del Item */}
+                      {/* Precio Total del Item CORREGIDO (* 1000) */}
                       <span className="font-medium text-magnolia-dark text-sm">
-                        ${(item.price * item.quantity).toLocaleString("es-AR")}
+                        ${(item.price * item.quantity * 1000).toLocaleString("es-AR", {
+                          minimumFractionDigits: 0,
+                          maximumFractionDigits: 0
+                        })}
                       </span>
                     </div>
                   </div>
@@ -112,22 +114,25 @@ export default function CartSidebar() {
               
               <div className="flex justify-between items-center mb-6">
                 <span className="font-sans text-gray-600">Subtotal</span>
+                {/* PRECIO TOTAL CORREGIDO (* 1000) */}
                 <span className="font-serif text-xl font-bold text-magnolia-dark">
-                  ${totalPrice.toLocaleString("es-AR")}
+                  ${(totalPrice * 1000).toLocaleString("es-AR", {
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 0
+                  })}
                 </span>
               </div>
               
               <div className="flex flex-col gap-3">
                 <Link 
-                   href="/checkout" 
-                   onClick={toggleCart} // Cerramos el sidebar al irnos
-                   className="block w-full text-center bg-magnolia-dark text-white py-4 uppercase tracking-widest text-sm hover:bg-magnolia-lilac transition-colors font-bold shadow-lg"
-                   > Iniciar Compra
+                    href="/checkout" 
+                    onClick={toggleCart} 
+                    className="block w-full text-center bg-magnolia-dark text-white py-4 uppercase tracking-widest text-sm hover:bg-magnolia-lilac transition-colors font-bold shadow-lg"
+                    > Iniciar Compra
                 </Link>
 
-                {/* Botón Seguir Comprando */}
                 <button 
-                    onClick={toggleCart} // Solo cierra el carrito y te deja donde estabas (o podés usar Link a /)
+                    onClick={toggleCart} 
                     className="w-full border border-gray-300 text-gray-600 py-3 uppercase tracking-widest text-xs hover:border-magnolia-dark hover:text-magnolia-dark transition-colors flex items-center justify-center gap-2"
                 >
                     <ArrowLeft size={14} />

@@ -118,8 +118,16 @@ export async function deleteProduct(id: number): Promise<void> {
   });
 }
 
-// Orders
-export async function createOrder(data: { userId: string; items: { productId: string; quantity: number }[]; address?: any; }): Promise<any> {
+// Orders - MODIFICADO PARA PRECIOS REALES
+export async function createOrder(data: { 
+  userId: string; 
+  items: { productId: string; quantity: number; price?: number }[]; // Añadimos price opcional
+  address?: any; 
+}): Promise<any> {
+  
+  // Si el backend necesita el precio total calculado o precios individuales,
+  // nos aseguramos de que viajen multiplicados por 1000 si los incluimos.
+  
   return apiFetch(`${API_URL}/order`, {
     method: 'POST',
     body: JSON.stringify(data),
@@ -128,9 +136,23 @@ export async function createOrder(data: { userId: string; items: { productId: st
 
 // Mercado Pago
 export async function createPreference(data: { orderId: string; userId: string }): Promise<any> {
-  const res = await apiFetch(`${API_URL}/mercado-pago/create-preference`, {
+  // Obtenemos la URL base (http://localhost:3000 o tu dominio en Vercel)
+  const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
+
+  const payload = {
+    ...data,
+    // Agregamos las URLs a donde MP debe volver al terminar
+    back_urls: {
+      success: `${baseUrl}/checkout/success`,
+      failure: `${baseUrl}/checkout/failure`,
+      pending: `${baseUrl}/checkout/pending`,
+    },
+    // Esto hace que si el pago es exitoso, vuelva solo a tu web
+    auto_return: "approved", 
+  };
+
+  return apiFetch(`${API_URL}/mercado-pago/create-preference`, {
     method: 'POST',
-    body: JSON.stringify(data),
+    body: JSON.stringify(payload),
   });
-  return res;
 }

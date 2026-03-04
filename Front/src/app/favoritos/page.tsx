@@ -40,16 +40,25 @@ export default function FavoritesPage() {
 
                 {/* Foto y Link */}
                 <Link href={`/producto/${product.id}`} className="block relative aspect-square w-full bg-gray-50 overflow-hidden mb-4">
-                  <Image src={product.image} alt={product.name} fill className="object-cover" />
+                  <Image src={product.image || product.imageUrl || "/placeholder.jpg"} alt={product.name} fill className="object-cover" />
                 </Link>
 
                 {/* Info */}
                 <div className="text-center space-y-2">
                   <h3 className="font-serif text-gray-800 text-lg">{product.name}</h3>
-                  <p className="font-sans text-gray-500">${product.price.toLocaleString("es-AR")}</p>
+                  
+                  {/* PRECIO CORREGIDO AQUÍ: Multiplicación por 1000 y formato AR */}
+                  <p className="font-sans text-gray-800 font-medium">
+                    ${(Number(product.price) * 1000).toLocaleString("es-AR", {
+                      minimumFractionDigits: 0,
+                      maximumFractionDigits: 0
+                    })}
+                  </p>
                   
                   {/* Botón Agregar al Carrito Directo */}
                   <div className="pt-2">
+                    {/* Pasamos el producto con el precio original, 
+                        el componente AddToCartButton debería manejar la lógica de suma internamente */}
                     <AddToCartButton product={product} />
                   </div>
                 </div>

@@ -2,8 +2,9 @@
 
 import { useOrder } from "@/lib/hooks";
 import { useRouter, useParams } from "next/navigation";
-import { ArrowLeft, Loader2, AlertCircle, Package, Truck, Calendar, DollarSign } from "lucide-react";
+import { ArrowLeft, Loader2, AlertCircle, Package, Truck, Calendar, DollarSign, ShoppingBag } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 
 interface OrderItem {
   id: string;
@@ -68,46 +69,31 @@ export default function OrderDetailPage() {
 
   if (isLoading) {
     return (
-      <main className="min-h-screen bg-gray-50 py-10">
-        <div className="container mx-auto px-4 max-w-4xl">
-          <button
-            onClick={() => router.back()}
-            className="flex items-center gap-2 text-gray-500 hover:text-magnolia-dark transition-colors mb-6"
-          >
-            <ArrowLeft size={18} />
-            Volver
-          </button>
-
-          <div className="flex items-center justify-center min-h-[400px]">
-            <div className="flex flex-col items-center gap-2 text-gray-500">
-              <Loader2 size={40} className="animate-spin" />
-              <p>Cargando detalles de la orden...</p>
-            </div>
-          </div>
-        </div>
-      </main>
+      <div className="flex flex-col items-center justify-center min-h-[400px] text-gray-500">
+        <Loader2 size={40} className="animate-spin mb-2" />
+        <p>Cargando detalles...</p>
+      </div>
     );
   }
 
+  // CAMBIO AQUÍ: Si hay error o no hay orden, mostramos un mensaje amigable
   if (isError || !order) {
     return (
-      <main className="min-h-screen bg-gray-50 py-10">
-        <div className="container mx-auto px-4 max-w-4xl">
-          <button
-            onClick={() => router.back()}
-            className="flex items-center gap-2 text-gray-500 hover:text-magnolia-dark transition-colors mb-6"
-          >
-            <ArrowLeft size={18} />
-            Volver
-          </button>
-
-          <div className="bg-red-50 border border-red-200 rounded-lg p-8 flex flex-col items-center gap-3">
-            <AlertCircle size={40} className="text-red-500" />
-            <p className="text-red-700 font-semibold">No se pudo cargar la orden</p>
-            <p className="text-red-600 text-sm">Intenta nuevamente más tarde</p>
-          </div>
+      <div className="bg-white rounded-lg p-12 flex flex-col items-center justify-center text-center shadow-sm border border-gray-100">
+        <div className="bg-gray-50 p-4 rounded-full mb-4">
+          <ShoppingBag size={48} className="text-gray-300" />
         </div>
-      </main>
+        <h3 className="text-xl font-serif text-magnolia-dark mb-2">Aún no tenés compras</h3>
+        <p className="text-gray-500 mb-6 max-w-xs">
+          Cuando realices tu primer pedido, aparecerá aquí para que puedas seguir su estado.
+        </p>
+        <Link 
+          href="/" 
+          className="bg-magnolia-dark text-white px-8 py-3 rounded-sm uppercase tracking-widest text-xs hover:bg-magnolia-lilac transition-colors"
+        >
+          Ir a la tienda
+        </Link>
+      </div>
     );
   }
 
@@ -117,7 +103,6 @@ export default function OrderDetailPage() {
   return (
     <main className="min-h-screen bg-gray-50 py-10">
       <div className="container mx-auto px-4 max-w-4xl">
-        {/* Botón volver */}
         <button
           onClick={() => router.back()}
           className="flex items-center gap-2 text-gray-500 hover:text-magnolia-dark transition-colors mb-8"
@@ -126,7 +111,6 @@ export default function OrderDetailPage() {
           Volver al historial
         </button>
 
-        {/* Header de la orden */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
           <div className="flex justify-between items-start mb-4">
             <div>
@@ -139,7 +123,6 @@ export default function OrderDetailPage() {
             </div>
           </div>
 
-          {/* Timeline de estado */}
           <div className="flex gap-4 mt-6 pt-6 border-t border-gray-100">
             <div className="flex items-center gap-2">
               <Calendar size={16} className="text-gray-400" />
@@ -176,7 +159,6 @@ export default function OrderDetailPage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Productos */}
           <div className="lg:col-span-2">
             <div className="bg-white rounded-lg shadow-sm p-6">
               <h2 className="font-semibold text-lg text-gray-800 mb-4 flex items-center gap-2">
@@ -191,7 +173,6 @@ export default function OrderDetailPage() {
                       key={item.id || idx}
                       className="flex gap-4 pb-4 border-b border-gray-100 last:border-0"
                     >
-                      {/* Imagen del producto */}
                       {item.product?.imageUrl ? (
                         <div className="relative w-20 h-20 bg-gray-100 rounded-sm flex-shrink-0 overflow-hidden">
                           <Image
@@ -207,21 +188,21 @@ export default function OrderDetailPage() {
                         </div>
                       )}
 
-                      {/* Info del producto */}
                       <div className="flex-1">
                         <h3 className="font-serif text-gray-800 mb-1">
                           {item.product?.name || "Producto sin nombre"}
                         </h3>
                         <p className="text-sm text-gray-500">Cantidad: {item.quantity}</p>
                         <p className="text-sm text-gray-500">
-                          Precio unitario: ${Number(item.price).toLocaleString("es-AR")}
+                          {/* PRECIO UNITARIO CORREGIDO (* 1000) */}
+                          Precio unitario: ${(Number(item.price) * 1000).toLocaleString("es-AR")}
                         </p>
                       </div>
 
-                      {/* Subtotal */}
                       <div className="text-right">
                         <p className="font-semibold text-gray-800">
-                          ${(Number(item.price) * item.quantity).toLocaleString("es-AR")}
+                          {/* SUBTOTAL POR PRODUCTO CORREGIDO (* 1000) */}
+                          ${(Number(item.price) * item.quantity * 1000).toLocaleString("es-AR")}
                         </p>
                       </div>
                     </div>
@@ -233,9 +214,7 @@ export default function OrderDetailPage() {
             </div>
           </div>
 
-          {/* Resumen */}
           <div className="lg:col-span-1">
-            {/* Resumen de la orden */}
             <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
               <h2 className="font-semibold text-lg text-gray-800 mb-4 flex items-center gap-2">
                 <DollarSign size={20} />
@@ -246,7 +225,8 @@ export default function OrderDetailPage() {
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Subtotal</span>
                   <span className="text-gray-800">
-                    ${Number(order.totalPrice).toLocaleString("es-AR")}
+                    {/* SUBTOTAL GENERAL CORREGIDO (* 1000) */}
+                    ${(Number(order.totalPrice) * 1000).toLocaleString("es-AR")}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
@@ -257,21 +237,20 @@ export default function OrderDetailPage() {
                   <div className="flex justify-between">
                     <span className="font-semibold text-gray-800">Total</span>
                     <span className="font-bold text-lg text-magnolia-dark">
-                      ${Number(order.totalPrice).toLocaleString("es-AR")}
+                      {/* TOTAL GENERAL CORREGIDO (* 1000) */}
+                      ${(Number(order.totalPrice) * 1000).toLocaleString("es-AR")}
                     </span>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Dirección de envío */}
             {order.shippingAddress && (
               <div className="bg-white rounded-lg shadow-sm p-6">
                 <h2 className="font-semibold text-lg text-gray-800 mb-4 flex items-center gap-2">
                   <Truck size={20} />
                   Envío
                 </h2>
-
                 <div className="space-y-2 text-sm">
                   {order.shippingAddress.name && (
                     <div>
@@ -279,35 +258,30 @@ export default function OrderDetailPage() {
                       <p className="font-medium text-gray-800">{order.shippingAddress.name}</p>
                     </div>
                   )}
-
                   {order.shippingAddress.email && (
                     <div>
                       <p className="text-gray-500">Email</p>
                       <p className="font-medium text-gray-800">{order.shippingAddress.email}</p>
                     </div>
                   )}
-
                   {order.shippingAddress.address && (
                     <div>
                       <p className="text-gray-500">Dirección</p>
                       <p className="font-medium text-gray-800">{order.shippingAddress.address}</p>
                     </div>
                   )}
-
                   {order.shippingAddress.city && (
                     <div>
                       <p className="text-gray-500">Ciudad</p>
                       <p className="font-medium text-gray-800">{order.shippingAddress.city}</p>
                     </div>
                   )}
-
                   {order.shippingAddress.postalCode && (
                     <div>
                       <p className="text-gray-500">Código Postal</p>
                       <p className="font-medium text-gray-800">{order.shippingAddress.postalCode}</p>
                     </div>
                   )}
-
                   {order.shippingAddress.phone && (
                     <div>
                       <p className="text-gray-500">Teléfono</p>

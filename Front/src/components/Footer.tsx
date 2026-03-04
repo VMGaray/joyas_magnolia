@@ -47,7 +47,7 @@ export default function Footer() {
             <h4 className="font-serif text-lg mb-6">Colecciones</h4>
             <ul className="space-y-3 font-sans text-sm text-gray-400">
               <li><Link href="/categoria/plata-925" className="hover:text-white transition-colors">Plata 925</Link></li>
-              <li><Link href="/categoria/oro-18kl" className="hover:text-white transition-colors">Oro 18kl</Link></li>
+              <li><Link href="/categoria/oro-18kl" className="hover:text-white transition-colors">Oro 18k</Link></li>
               <li><Link href="/categoria/enchapado" className="hover:text-white transition-colors">Enchapado</Link></li>
               <li><Link href="/categoria/personalizados" className="hover:text-white transition-colors">Personalizados</Link></li>
             </ul>

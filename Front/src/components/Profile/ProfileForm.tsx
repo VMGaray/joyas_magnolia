@@ -11,74 +11,76 @@ interface ProfileFormProps {
 }
 
 export const ProfileForm = ({ userData, onSaved }: ProfileFormProps) => {
+  // 1. Agregamos ciudad y zip al estado inicial
   const [form, setForm] = useState<UserData>({
     username: userData?.username || "",
     email: userData?.email || "",
     phone: userData?.phone || "",
     address: userData?.address || "",
+    city: userData?.city || "", // ✅ Ya no necesita el ignore
+    zip: userData?.zip || "",   // ✅ Ya no necesita el ignore
   });
+
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const { token, user } = useAuth();
 
-  const handleChange = (field: keyof UserData, value: string) => {
+  const handleChange = (field: string, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleSave = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setSaving(true);
-  setMessage(null);
-  setError(null);
+    e.preventDefault();
+    setSaving(true);
+    setMessage(null);
+    setError(null);
 
-  try {
-    const userId = user?.id;
-
-    if (!userId) throw new Error("No se encontró el ID del usuario. Por favor, recarga la página.");
-
-    // Preparar los datos, asegurando que phone sea número (solo dígitos)
-    const dataToSend = {
-      name: form.username,
-      username: form.username,
-      phone: form.phone ? Number(form.phone.replace(/\D/g, '')) : null, // Extraer solo dígitos y convertir a número
-      address: form.address,
-    };
-
-    const res = await fetch(`http://localhost:4000/auth/profile/${userId}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token || ""}`,
-      },
-      body: JSON.stringify(dataToSend),
-    });
-
-    const text = await res.text();
-    let data: any;
     try {
-      data = JSON.parse(text);
-    } catch {
-      data = { message: text };
+      const userId = user?.id;
+      if (!userId) throw new Error("No se encontró el ID del usuario.");
+
+      // 2. Preparamos el paquete de datos completo
+      const dataToSend = {
+        name: form.username,
+        username: form.username,
+        phone: form.phone ? String(form.phone).replace(/\D/g, '') : null,
+        address: form.address,
+        city: form.city, // ✅ Ya no necesita el ignore
+        zip: form.zip    // ✅ Ya no necesita el ignore
+      };
+
+      const res = await fetch(`http://localhost:4000/auth/profile/${userId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token || ""}`,
+        },
+        body: JSON.stringify(dataToSend),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "No se pudo guardar.");
+      }
+
+      const updatedData = await res.json();
+
+      // 3. Actualizamos todo
+      localStorage.setItem("user", JSON.stringify(updatedData));
+      onSaved(updatedData);
+      setMessage("Datos actualizados correctamente.");
+      
+      // Limpiar mensaje después de 3 segundos
+      setTimeout(() => setMessage(null), 3000);
+
+    } catch (err: any) {
+      setError(err?.message || "Error inesperado.");
+    } finally {
+      setSaving(false);
     }
-
-    if (!res.ok) {
-      const serverError = Array.isArray(data.message) ? data.message.join(", ") : data.message;
-      throw new Error(serverError || "No se pudo guardar los cambios.");
-    }
-
-    // Actualizar localStorage y estado
-    localStorage.setItem("user", JSON.stringify(data));
-    onSaved(data);
-    setMessage("Datos actualizados correctamente.");
-  } catch (err: any) {
-    setError(err?.message || "Error inesperado.");
-  } finally {
-    setSaving(false);
-  }
-};
-
+  };
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
@@ -103,7 +105,7 @@ export const ProfileForm = ({ userData, onSaved }: ProfileFormProps) => {
               type="text"
               value={form.username || ""}
               onChange={(e) => handleChange("username", e.target.value)}
-              className="w-full border border-gray-300 px-3 py-2.5 rounded-md focus:border-purple-500 focus:ring-1 focus:ring-purple-500 outline-none text-sm"
+              className="w-full border border-gray-300 px-3 py-2.5 rounded-md focus:border-purple-500 outline-none text-sm"
             />
           </div>
 
@@ -129,7 +131,7 @@ export const ProfileForm = ({ userData, onSaved }: ProfileFormProps) => {
               value={form.phone || ""}
               onChange={(e) => handleChange("phone", e.target.value)}
               placeholder="+54 9 ..."
-              className="w-full border border-gray-300 pl-10 pr-3 py-2.5 rounded-md focus:border-purple-500 focus:ring-1 focus:ring-purple-500 outline-none text-sm"
+              className="w-full border border-gray-300 pl-10 pr-3 py-2.5 rounded-md focus:border-purple-500 outline-none text-sm"
             />
             <Phone size={16} className="absolute left-3 top-3 text-gray-400" />
           </div>
@@ -143,28 +145,34 @@ export const ProfileForm = ({ userData, onSaved }: ProfileFormProps) => {
               value={form.address || ""}
               onChange={(e) => handleChange("address", e.target.value)}
               placeholder="Calle, Número, Depto"
-              className="w-full border border-gray-300 pl-10 pr-3 py-2.5 rounded-md focus:border-purple-500 focus:ring-1 focus:ring-purple-500 outline-none text-sm"
+              className="w-full border border-gray-300 pl-10 pr-3 py-2.5 rounded-md focus:border-purple-500 outline-none text-sm"
             />
             <MapPin size={16} className="absolute left-3 top-3 text-gray-400" />
           </div>
+          
+          {/* Inputs de Ciudad y CP ahora conectados */}
           <div className="grid grid-cols-2 gap-4">
             <input
-              type="text"
-              placeholder="Ciudad"
-              className="w-full border border-gray-300 p-2.5 rounded-md outline-none text-sm focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
-            />
-            <input
-              type="text"
-              placeholder="Código Postal"
-              className="w-full border border-gray-300 p-2.5 rounded-md outline-none text-sm focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
-            />
+  type="text"
+  placeholder="Ciudad"
+  value={form.city || ""} // ✅ Borrá el // @ts-ignore de acá arriba
+  onChange={(e) => handleChange("city", e.target.value)}
+  className="w-full border border-gray-300 p-2.5 rounded-md outline-none text-sm focus:border-purple-500"
+/>
+<input
+  type="text"
+  placeholder="Código Postal"
+  value={form.zip || ""} // ✅ Borrá el // @ts-ignore de acá arriba
+  onChange={(e) => handleChange("zip", e.target.value)}
+  className="w-full border border-gray-300 p-2.5 rounded-md outline-none text-sm focus:border-purple-500"
+/>
           </div>
         </div>
 
         <button
           type="submit"
           disabled={saving}
-          className="bg-gray-900 text-white px-8 py-3 text-xs uppercase tracking-widest hover:bg-purple-700 transition-all font-bold rounded-md shadow-md hover:shadow-lg disabled:opacity-60 flex items-center gap-2"
+          className="bg-gray-900 text-white px-8 py-3 text-xs uppercase tracking-widest hover:bg-purple-700 transition-all font-bold rounded-md shadow-md disabled:opacity-60 flex items-center gap-2"
         >
           {saving ? <Loader2 className="animate-spin" size={16} /> : "Guardar Cambios"}
         </button>
