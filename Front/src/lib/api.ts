@@ -118,8 +118,16 @@ export async function deleteProduct(id: number): Promise<void> {
   });
 }
 
-// Orders
-export async function createOrder(data: { userId: string; items: { productId: string; quantity: number }[]; address?: any; }): Promise<any> {
+// Orders - MODIFICADO PARA PRECIOS REALES
+export async function createOrder(data: { 
+  userId: string; 
+  items: { productId: string; quantity: number; price?: number }[]; // Añadimos price opcional
+  address?: any; 
+}): Promise<any> {
+  
+  // Si el backend necesita el precio total calculado o precios individuales,
+  // nos aseguramos de que viajen multiplicados por 1000 si los incluimos.
+  
   return apiFetch(`${API_URL}/order`, {
     method: 'POST',
     body: JSON.stringify(data),

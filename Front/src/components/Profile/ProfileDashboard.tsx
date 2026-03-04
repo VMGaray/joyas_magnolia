@@ -13,6 +13,8 @@ export interface UserData {
   email?: string;
   phone?: string;
   address?: string;
+  city?: string; // ✅ Agregado
+  zip?: string;  // ✅ Agregado
 }
 
 export const ProfileDashboard = () => {
