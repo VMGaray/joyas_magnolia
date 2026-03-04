@@ -14,11 +14,11 @@ const config = {
   username: process.env.DB_USERNAME || 'postgres',
   password: process.env.DB_PASSWORD || 'password',
   database: process.env.DB_NAME || 'aidi_db',
-  synchronize: false,
-  //dropSchema: true,
+  synchronize: true,
+  dropSchema: true,
   logging: ['error'],
-  entities: [join(__dirname, '/../**/*.entity{.ts,.js}')],
-  migrations: [join(__dirname, '/../migrations/*{.ts,.js}')],
+  entities: [__filename.endsWith('.js') ? 'dist/**/*.entity.js' : 'src/**/*.entity.ts'],
+  migrations: [__filename.endsWith('.js') ? 'dist/migrations/*.js' : 'src/migrations/*.ts'],
   extra: {
     ssl:
       process.env.NODE_ENV === 'production'

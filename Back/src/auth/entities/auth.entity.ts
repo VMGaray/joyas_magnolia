@@ -27,6 +27,12 @@ export class Auth {
   @Column({ type: 'varchar', length: 150, nullable: true })
   address: string;
 
+  @Column({ type: 'varchar', length: 6, nullable: true })
+  resetPasswordCode: string;
+
+  @Column({ type: 'timestamp', nullable: true })
+  resetPasswordExpires: Date;
+
   @OneToMany(() => ProductRating, (rating) => rating.user)
   ratings: ProductRating[];
 

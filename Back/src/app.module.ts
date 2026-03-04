@@ -4,7 +4,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import typeOrmConfig from './config/typeorm.config';
+import typeOrmConfig from './config/typeorm';
 import { ProductsModule } from './products/products.module';
 import { AuthModule } from './auth/auth.module';
 import { JwtModule } from '@nestjs/jwt';
@@ -51,4 +51,4 @@ import { OrderModule } from './order/order.module';
   controllers: [],
   providers: [],
 })
-export class AppModule {}
+export class AppModule { }

@@ -1,12 +1,12 @@
 import { Auth } from 'src/auth/entities/auth.entity';
 import { Product } from 'src/products/entities/product.entity';
-import { 
-  Entity, 
-  PrimaryGeneratedColumn, 
-  Column, 
-  ManyToOne, 
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
   CreateDateColumn,
-  UpdateDateColumn 
+  UpdateDateColumn
 } from 'typeorm';
 
 @Entity('product_ratings')

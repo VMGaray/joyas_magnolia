@@ -9,7 +9,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { ChangePasswordDto, LoginDto, RegisterDto, UpdateUserDto } from './dtos/auth.dto';
+import { ChangePasswordDto, ForgotPasswordDto, LoginDto, RegisterDto, ResetPasswordDto, UpdateUserDto, VerifyCodeDto } from './dtos/auth.dto';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Roles } from 'src/decorators/rol.decorator';
 import { Role } from './rol.enum';
@@ -70,5 +70,23 @@ export class AuthController {
   @Delete('delete-account/:id')
   async deleteAccount(@Param('id') id: string) {
     return this.authService.deleteUser(id);
+  }
+
+  @ApiOperation({ summary: 'Request password reset' })
+  @Post('forgot-password')
+  async forgotPassword(@Body() data: ForgotPasswordDto) {
+    return this.authService.forgotPassword(data);
+  }
+
+  @ApiOperation({ summary: 'Verify reset code' })
+  @Post('verify-code')
+  async verifyCode(@Body() data: VerifyCodeDto) {
+    return this.authService.verifyResetCode(data);
+  }
+
+  @ApiOperation({ summary: 'Reset password' })
+  @Post('reset-password')
+  async resetPassword(@Body() data: ResetPasswordDto) {
+    return this.authService.resetPassword(data);
   }
 }
