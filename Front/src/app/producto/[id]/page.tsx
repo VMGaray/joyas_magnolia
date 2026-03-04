@@ -1,4 +1,3 @@
-
 import Image from "next/image";
 import Link from "next/link";
 import { ChevronRight, Star, AlertCircle } from "lucide-react";
@@ -18,6 +17,7 @@ interface Product {
   imageUrl: string | null;
   category?: { id: number; name: string } | null;
   productType?: { id: number; name: string } | null;
+  material?: string; // Agregado para consistencia con el Admin
 }
 
 async function getProduct(id: string): Promise<Product | null> {
@@ -42,7 +42,14 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
     notFound();
   }
 
-  // Convertir a formato compatible con los botones
+  // Lógica para determinar la categoría a mostrar (evita el "Sin categoría")
+  const displayCategory = 
+    product.category?.name || 
+    product.productType?.name || 
+    product.material || 
+    "Joyas";
+
+  // Convertir a formato compatible con los botones y corregir el precio
   const formattedProduct = {
     id: product.id,
     name: product.name,
@@ -51,8 +58,11 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
     stock: product.stock,
     image: product.imageUrl || "/placeholder.jpg",
     imageUrl: product.imageUrl || "/placeholder.jpg",
-    formattedPrice: `$${Number(product.price).toLocaleString("es-AR")}`,
-    category: product.category?.name || "Sin categoría",
+    // CORRECCIÓN DE PRECIO: Multiplicamos por 1000 y formateamos
+    formattedPrice: `$${(Number(product.price) * 1000).toLocaleString("es-AR", {
+      minimumFractionDigits: 0,
+    })}`,
+    category: displayCategory,
     rating: 5,
   };
 
@@ -63,13 +73,19 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
         {/* BOTÓN VOLVER */}
         <BackButton />
 
-        {/* Miga de pan */}
+        {/* Miga de pan (Breadcrumb) */}
         <div className="flex items-center gap-2 text-xs text-gray-400 mb-8 uppercase tracking-wider">
           <Link href="/" className="hover:text-magnolia-dark">Home</Link>
           <ChevronRight size={12} />
-          <span className="text-magnolia-dark font-bold">{formattedProduct.category}</span>
+          {/* Link dinámico a la categoría/material para que el usuario pueda volver a filtrar */}
+          <Link 
+            href={`/categoria/${displayCategory.toLowerCase().replace(/\s+/g, '-')}`} 
+            className="hover:text-magnolia-dark transition-colors"
+          >
+            {displayCategory}
+          </Link>
           <ChevronRight size={12} />
-          <span>{formattedProduct.name}</span>
+          <span className="text-magnolia-dark font-bold">{formattedProduct.name}</span>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-20">
@@ -123,7 +139,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
             </div>
 
             {/* Descripción */}
-            <p className="font-sans text-gray-600 leading-relaxed mb-8 text-sm md:text-base">
+            <p className="font-sans text-gray-600 leading-relaxed mb-8 text-sm md:text-base italic">
                 {formattedProduct.description}
             </p>
 
@@ -144,13 +160,13 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
             {/* Info adicional */}
             <div className="mt-12 space-y-4 border-t border-gray-100 pt-8">
               <div className="flex justify-between">
-                <span className="text-gray-600 text-sm">Categoría:</span>
-                <span className="font-medium text-gray-800">{formattedProduct.category}</span>
+                <span className="text-gray-600 text-sm italic">Detalle de colección:</span>
+                <span className="font-medium text-gray-800 uppercase text-xs tracking-widest">{formattedProduct.category}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600 text-sm">Disponibilidad:</span>
-                <span className="font-medium text-green-600">
-                  {formattedProduct.stock > 0 ? "En stock" : "Agotado"}
+                <span className="text-gray-600 text-sm italic">Estado:</span>
+                <span className={`font-medium ${formattedProduct.stock > 0 ? "text-green-600" : "text-red-600"}`}>
+                  {formattedProduct.stock > 0 ? "Disponible ahora" : "Agotado"}
                 </span>
               </div>
             </div>

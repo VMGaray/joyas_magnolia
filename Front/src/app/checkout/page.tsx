@@ -102,8 +102,9 @@ export default function CheckoutPage() {
                   <div className="flex-1">
                     <h3 className="font-serif text-sm text-gray-800">{item.name}</h3>
                   </div>
+                  {/* PRECIO ITEM CORREGIDO (* 1000) */}
                   <span className="font-medium text-gray-600 text-sm">
-                    ${(item.price * item.quantity).toLocaleString("es-AR")}
+                    ${(Number(item.price) * item.quantity * 1000).toLocaleString("es-AR")}
                   </span>
                 </div>
               ))}
@@ -113,24 +114,26 @@ export default function CheckoutPage() {
             <div className="border-t border-gray-200 pt-4 space-y-2 mb-8">
               <div className="flex justify-between text-gray-500 text-sm">
                 <span>Subtotal</span>
-                <span>${totalPrice.toLocaleString("es-AR")}</span>
+                {/* SUBTOTAL CORREGIDO (* 1000) */}
+                <span>${(totalPrice * 1000).toLocaleString("es-AR")}</span>
               </div>
               <div className="flex justify-between text-gray-500 text-sm">
                 <span>Envío</span>
-                <span className="text-green-600 font-medium">Gratis</span> {/* O lógica de envío */}
+                <span className="text-green-600 font-medium">Gratis</span>
               </div>
               <div className="flex justify-between text-xl font-serif text-magnolia-dark font-bold pt-4 border-t border-gray-100 mt-4">
                 <span>Total</span>
-                <span>${totalPrice.toLocaleString("es-AR")}</span>
+                {/* TOTAL CORREGIDO (* 1000) */}
+                <span>${(totalPrice * 1000).toLocaleString("es-AR")}</span>
               </div>
             </div>
 
-            {/* BOTÓN DE PAGO (Este se conectará al Backend) */}
+            {/* BOTÓN DE PAGO */}
             <form onSubmit={async (e) => {
               e.preventDefault();
               setError(null);
               setLoading(true);
-              // Require logged user
+              
               const storedUser = localStorage.getItem('user');
               const user = storedUser ? JSON.parse(storedUser) : null;
               if (!user) {
@@ -139,7 +142,6 @@ export default function CheckoutPage() {
                 return;
               }
 
-              // Build order payload
               const orderPayload = {
                 userId: user.id,
                 items: items.map((it: any) => ({ productId: it.id, quantity: it.quantity })),
@@ -148,9 +150,7 @@ export default function CheckoutPage() {
 
               try {
                 const createdOrder = await createOrder(orderPayload);
-                // create preference
                 const pref = await createPreference({ orderId: createdOrder.id, userId: user.id });
-                // Redirect to Mercado Pago init_point
                 const redirectUrl = pref?.init_point || pref?.sandbox_init_point;
                 if (redirectUrl) {
                   window.location.href = redirectUrl;
