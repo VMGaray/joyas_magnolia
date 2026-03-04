@@ -1,12 +1,14 @@
 "use client";
 
-import { Lock } from "lucide-react";
+import { Lock, Loader2 } from "lucide-react";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
+import { useState } from "react";
 
 export default function MercadoPagoButton() {
   const { items } = useCart();
   const { token, user } = useAuth();
+  const [loading, setLoading] = useState(false);
 
   const handlePay = async () => {
     // 1. Verificación de seguridad
@@ -15,23 +17,27 @@ export default function MercadoPagoButton() {
       return;
     }
 
+    setLoading(true);
+
     try {
-      // 2. Mapeo de productos al formato que espera Mercado Pago
+      // 2. Mapeo de productos con PRECIO CORREGIDO (* 1000)
       const productsToPay = items.map((item) => ({
-        id: item.id,
+        id: String(item.id),
         title: item.name,
         quantity: item.quantity || 1,
-        unit_price: Number(item.price),
+        // CORRECCIÓN: Multiplicamos por 1000 para pasar de 15.3 a 15300
+        unit_price: Math.round(Number(item.price) * 1000), 
+        currency_id: "ARS",
       }));
 
-      // 3. Construcción del cuerpo de la petición según el DTO del backend
+      // 3. Construcción del cuerpo de la petición
       const paymentBody = {
-        orderId: crypto.randomUUID(), // Genera el UUID requerido por el backend
+        orderId: crypto.randomUUID(), 
         userId: user?.id,
         items: productsToPay,
       };
 
-      // 4. Petición al backend
+      // 4. Petición al backend usando la variable de entorno
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/mercado-pago/create-preference`, {
         method: "POST",
         headers: {
@@ -44,15 +50,17 @@ export default function MercadoPagoButton() {
       // 5. Manejo de respuesta
       if (!res.ok) {
         const errorData = await res.json();
-        // Si hay errores de validación (como el UUID), aparecerán aquí
         throw new Error(errorData.message || "Error al crear la preferencia de pago");
       }
 
       const data = await res.json();
 
       // 6. Redirección al checkout de Mercado Pago
-      if (data.init_point) {
-        window.location.href = data.init_point;
+      // Nota: Usamos init_point para producción o sandbox_init_point para pruebas
+      const redirectUrl = data.init_point || data.sandbox_init_point;
+
+      if (redirectUrl) {
+        window.location.href = redirectUrl;
       } else {
         throw new Error("No se recibió el punto de inicio de pago");
       }
@@ -60,16 +68,25 @@ export default function MercadoPagoButton() {
     } catch (err: any) {
       console.error("Error en la pasarela de pago:", err);
       alert(`Error: ${err.message}`);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <button
       onClick={handlePay}
-      className="w-full bg-blue-600 text-white py-4 rounded-sm font-bold text-sm uppercase tracking-widest hover:bg-blue-700 transition-all shadow-md flex items-center justify-center gap-2"
+      disabled={loading || items.length === 0}
+      className={`w-full py-4 rounded-sm font-bold text-sm uppercase tracking-widest transition-all shadow-md flex items-center justify-center gap-2 ${
+        loading ? "bg-gray-400 cursor-not-allowed" : "bg-[#009EE3] text-white hover:bg-[#0087C3]"
+      }`}
     >
-      <Lock size={16} />
-      Pagar con Mercado Pago
+      {loading ? (
+        <Loader2 size={18} className="animate-spin" />
+      ) : (
+        <Lock size={16} />
+      )}
+      {loading ? "Generando pago..." : "Pagar con Mercado Pago"}
     </button>
   );
 }

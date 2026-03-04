@@ -136,9 +136,23 @@ export async function createOrder(data: {
 
 // Mercado Pago
 export async function createPreference(data: { orderId: string; userId: string }): Promise<any> {
-  const res = await apiFetch(`${API_URL}/mercado-pago/create-preference`, {
+  // Obtenemos la URL base (http://localhost:3000 o tu dominio en Vercel)
+  const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
+
+  const payload = {
+    ...data,
+    // Agregamos las URLs a donde MP debe volver al terminar
+    back_urls: {
+      success: `${baseUrl}/checkout/success`,
+      failure: `${baseUrl}/checkout/failure`,
+      pending: `${baseUrl}/checkout/pending`,
+    },
+    // Esto hace que si el pago es exitoso, vuelva solo a tu web
+    auto_return: "approved", 
+  };
+
+  return apiFetch(`${API_URL}/mercado-pago/create-preference`, {
     method: 'POST',
-    body: JSON.stringify(data),
+    body: JSON.stringify(payload),
   });
-  return res;
 }
