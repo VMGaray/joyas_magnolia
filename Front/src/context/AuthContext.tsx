@@ -16,6 +16,7 @@ interface AuthContextType {
   isLoggedIn: boolean;
   token: string | null;
   user: User | null;
+  loading: boolean; // ✅ Nuevo: Estado para evitar el parpadeo
   login: (token: string) => Promise<void>;
   logout: () => void;
   checkLogin: () => void;
@@ -25,6 +26,7 @@ const AuthContext = createContext<AuthContextType>({
   isLoggedIn: false,
   token: null,
   user: null,
+  loading: true, // Empezamos cargando
   login: async () => {},
   logout: () => {},
   checkLogin: () => {},
@@ -36,74 +38,65 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [token, setToken] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true); // ✅ Nuevo: Control de parpadeo
 
   const decodeToken = (token: string): User | null => {
-  try {
-    const decoded: any = jwtDecode(token);
-    console.log("🔍 Token decodificado:", decoded);
+    try {
+      const decoded: any = jwtDecode(token);
+      const roles: string[] = decoded.roles || [];
+      const isAdminFromRoles = Array.isArray(roles) && roles.includes("admin");
 
-    // Extraer roles si vienen en el token y derivar isAdmin
-    const roles: string[] = decoded.roles || [];
-    const isAdminFromRoles = Array.isArray(roles) && roles.includes("admin");
+      return {
+        id: decoded.id,
+        email: decoded.email,
+        isAdmin: decoded.isAdmin ?? isAdminFromRoles,
+        username: decoded.name || decoded.username || "",
+      };
+    } catch (error) {
+      console.error("Error al decodificar el token:", error);
+      return null;
+    }
+  };
 
-    return {
-      id: decoded.id,
-      email: decoded.email,
-      isAdmin: decoded.isAdmin ?? isAdminFromRoles,
-      username: decoded.name || decoded.username || "", // nombre completo
-    };
-  } catch (error) {
-    console.error("Error al decodificar el token:", error);
-    return null;
-  }
-};
-
-
-const fetchProfile = async (id: string, token: string, isAdmin?: boolean) => {
-  try {
-    const res = await fetch(`http://localhost:4000/auth/profile/${id}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-    if (!res.ok) throw new Error("No se pudo obtener el perfil");
-    const profile = await res.json();
-    console.log("📦 Perfil recibido:", profile);
-    
-    // Fusionar datos del perfil con isAdmin y id del token
-    const userData = {
-      ...profile,
-      isAdmin,
-      id,
-    };
-    setUser(userData);
-    localStorage.setItem("user", JSON.stringify(userData));
-  } catch (error) {
-    console.error("Error al traer perfil:", error);
-    // Si falla, usar al menos los datos del token decodificado
-    console.log("⚠️ Usando datos del token como fallback");
-    const fallbackUser = {
-      id,
-      email: "",
-      isAdmin,
-      username: "",
-    };
-    setUser(fallbackUser);
-    localStorage.setItem("user", JSON.stringify(fallbackUser));
-  }
-};
+  const fetchProfile = async (id: string, token: string, isAdmin?: boolean) => {
+    try {
+      const res = await fetch(`http://localhost:4000/auth/profile/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("No se pudo obtener el perfil");
+      const profile = await res.json();
+      
+      const userData = { ...profile, isAdmin, id };
+      setUser(userData);
+      localStorage.setItem("user", JSON.stringify(userData));
+      return userData;
+    } catch (error) {
+      console.error("Error al traer perfil:", error);
+      const fallbackUser = { id, email: "", isAdmin, username: "" };
+      setUser(fallbackUser);
+      localStorage.setItem("user", JSON.stringify(fallbackUser));
+      return fallbackUser;
+    }
+  };
 
   const checkLogin = () => {
-    const storedToken = localStorage.getItem("token");
-    const storedUser = localStorage.getItem("user");
-    if (storedToken) {
-      setIsLoggedIn(true);
-      setToken(storedToken);
-      setUser(storedUser ? JSON.parse(storedUser) : decodeToken(storedToken));
-    } else {
-      setIsLoggedIn(false);
-      setToken(null);
-      setUser(null);
+    try {
+      const storedToken = localStorage.getItem("token");
+      const storedUser = localStorage.getItem("user");
+      
+      if (storedToken) {
+        setIsLoggedIn(true);
+        setToken(storedToken);
+        if (storedUser) {
+          setUser(JSON.parse(storedUser));
+        } else {
+          setUser(decodeToken(storedToken));
+        }
+      }
+    } catch (err) {
+      console.error("Error en checkLogin:", err);
+    } finally {
+      setLoading(false); // ✅ Finaliza la carga inicial
     }
   };
 
@@ -111,26 +104,22 @@ const fetchProfile = async (id: string, token: string, isAdmin?: boolean) => {
     checkLogin();
   }, []);
 
-  
-const login = async (token: string) => {
-  const decodedUser = decodeToken(token);
-  console.log("🔐 Usuario decodificado:", decodedUser);
+  const login = async (token: string) => {
+    setLoading(true); // Bloqueamos acciones mientras logueamos
+    const decodedUser = decodeToken(token);
 
-  localStorage.setItem("token", token);
-  setIsLoggedIn(true);
-  setToken(token);
+    localStorage.setItem("token", token);
+    setToken(token);
+    setIsLoggedIn(true);
 
-  // Siempre traer el perfil completo del backend, pasando isAdmin desde el token
-  if (decodedUser?.id) {
-    console.log("📡 Llamando a /auth/profile con ID:", decodedUser.id);
-    await fetchProfile(decodedUser.id, token, decodedUser.isAdmin);
-  } else {
-    setUser(decodedUser);
-    localStorage.setItem("user", JSON.stringify(decodedUser));
-  }
-};
-
-
+    if (decodedUser?.id) {
+      await fetchProfile(decodedUser.id, token, decodedUser.isAdmin);
+    } else {
+      setUser(decodedUser);
+      localStorage.setItem("user", JSON.stringify(decodedUser));
+    }
+    setLoading(false); // Liberamos la carga
+  };
 
   const logout = () => {
     localStorage.removeItem("token");
@@ -142,7 +131,7 @@ const login = async (token: string) => {
   };
 
   return (
-    <AuthContext.Provider value={{ isLoggedIn, token, user, login, logout, checkLogin }}>
+    <AuthContext.Provider value={{ isLoggedIn, token, user, loading, login, logout, checkLogin }}>
       {children}
     </AuthContext.Provider>
   );

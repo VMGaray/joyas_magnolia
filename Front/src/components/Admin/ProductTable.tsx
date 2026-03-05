@@ -1,77 +1,74 @@
 'use client';
 
-import ProductRow from "./ProductRow";
+import { Edit2, Trash2, Star } from "lucide-react";
 
 export default function ProductTable({ products, onEdit, onDelete }: any) {
   return (
-    <div className="w-full">
-      {/* Tabla en pantallas medianas y grandes */}
-      <div className="hidden md:block overflow-x-auto">
-        <table className="min-w-full border-collapse border border-gray-300">
-          <thead>
-            <tr className="bg-gray-100">
-              <th className="border px-4 py-2">Imagen</th>
-              <th className="border px-4 py-2">Nombre</th>
-              <th className="border px-4 py-2">Precio</th>
-              <th className="border px-4 py-2">Stock</th>
-              <th className="border px-4 py-2">Categoría</th>
-              <th className="border px-4 py-2">Material</th>
-              <th className="border px-4 py-2">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {products.map((p: any) => (
-              <ProductRow
-                key={p.id}
-                product={p}
-                onEdit={onEdit}
-                onDelete={onDelete}
-              />
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Vista tipo cards en pantallas chicas */}
-      <div className="md:hidden space-y-4">
-        {products.map((p: any) => (
-          <div
-            key={p.id}
-            className="border rounded-lg p-4 shadow-sm bg-white flex flex-col gap-2"
-          >
-            <div className="flex items-center gap-4">
-              <img
-                src={p.image}
-                alt={p.name}
-                className="w-20 h-20 object-cover rounded"
-              />
-              <div>
-                <h3 className="font-semibold">{p.name}</h3>
-                <p className="text-sm text-gray-500">{p.category}</p>
+    <table className="w-full text-left border-collapse">
+      <thead>
+        <tr className="bg-gray-50/50 text-[10px] uppercase tracking-[0.2em] font-bold text-gray-400 border-b border-gray-100">
+          <th className="px-6 py-4">Imagen</th>
+          <th className="px-6 py-4">Nombre</th>
+          <th className="px-6 py-4">Destacado</th> {/* ✅ Nueva Columna */}
+          <th className="px-6 py-4">Precio</th>
+          <th className="px-6 py-4">Stock</th>
+          <th className="px-6 py-4 text-center">Acciones</th>
+        </tr>
+      </thead>
+      <tbody className="divide-y divide-gray-50">
+        {products.map((product: any) => (
+          <tr key={product.id} className="hover:bg-gray-50/50 transition-colors group">
+            <td className="px-6 py-4">
+              <div className="w-12 h-12 rounded-lg overflow-hidden border border-gray-100 relative bg-gray-50">
+                <img src={product.image} alt={product.name} className="object-cover w-full h-full" />
               </div>
-            </div>
+            </td>
+            <td className="px-6 py-4">
+              <div className="flex flex-col">
+                <span className="text-sm font-bold text-gray-700">{product.name}</span>
+                <span className="text-[9px] text-gray-400 font-mono">ID: {product.id.slice(0, 6).toUpperCase()}</span>
+              </div>
+            </td>
+            
+            {/* ✅ INDICADOR DE DESTACADO */}
+            <td className="px-6 py-4">
+              {product.isFeatured ? (
+                <div className="flex items-center gap-1 text-yellow-500 bg-yellow-50 w-fit px-2 py-1 rounded-full border border-yellow-100">
+                  <Star size={12} fill="currentColor" />
+                  <span className="text-[9px] font-black uppercase">Sí</span>
+                </div>
+              ) : (
+                <span className="text-[9px] text-gray-300 uppercase font-bold tracking-widest pl-2">No</span>
+              )}
+            </td>
 
-            <p><strong>Precio:</strong> {p.formattedPrice}</p>
-            <p><strong>Stock:</strong> {p.stock}</p>
-            <p><strong>Material:</strong> {p.material}</p>
-
-            <div className="flex gap-2 mt-2">
-              <button
-                onClick={() => onEdit(p)}
-                className="flex-1 bg-blue-500 text-white px-3 py-2 rounded hover:bg-blue-600"
-              >
-                Editar
-              </button>
-              <button
-                onClick={() => onDelete(p.id)}
-                className="flex-1 bg-red-500 text-white px-3 py-2 rounded hover:bg-red-600"
-              >
-                Eliminar
-              </button>
-            </div>
-          </div>
+            <td className="px-6 py-4 text-sm font-black text-magnolia-dark">
+              {product.formattedPrice}
+            </td>
+            <td className="px-6 py-4">
+              <span className={`text-xs font-bold ${product.stock < 5 ? "text-red-500" : "text-gray-500"}`}>
+                {product.stock} un.
+              </span>
+            </td>
+            <td className="px-6 py-4">
+              <div className="flex items-center justify-center gap-2">
+                <button 
+                  onClick={() => onEdit(product)}
+                  className="p-2 text-gray-400 hover:text-magnolia-dark hover:bg-magnolia-lil/10 rounded-lg transition-all"
+                >
+                  <Edit2 size={18} />
+                </button>
+                <button 
+                  onClick={() => onDelete(product.id)}
+                  className="p-2 text-red-200 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                >
+                  <Trash2 size={18} />
+                </button>
+              </div>
+            </td>
+          </tr>
         ))}
-      </div>
-    </div>
+      </tbody>
+    </table>
   );
 }

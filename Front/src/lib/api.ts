@@ -19,11 +19,11 @@ export interface Subtype {
 }
 
 export interface BackendProduct {
-  id: string; // UUID
+  id: string; // ✅ Mantenemos UUID como string
   name: string;
   description: string;
   price: number;
-  stock: number; // ✅ obligatorio
+  stock: number;
   imageUrl?: string | null;
   category?: { id: number; name: string } | null;
   productType?: { id: number; name: string } | null;
@@ -41,9 +41,10 @@ export interface ProductFilters {
 async function apiFetch(url: string, options: RequestInit = {}) {
   const token = localStorage.getItem("token");
 
-  const headers: HeadersInit = {
-    ...(options.headers || {}),
+  // ✅ Corregido: Definimos el tipo como Record para evitar el error de asignación de "Authorization"
+  const headers: Record<string, string> = {
     "Content-Type": "application/json",
+    ...(options.headers as Record<string, string>),
   };
 
   if (token) {
@@ -55,6 +56,9 @@ async function apiFetch(url: string, options: RequestInit = {}) {
   if (!res.ok) {
     throw new Error(`Error ${res.status}: ${await res.text()}`);
   }
+
+  // Manejo de respuestas 204 (No Content) para el delete
+  if (res.status === 204) return;
 
   return res.json();
 }
@@ -71,8 +75,6 @@ export async function getProducts(filters?: ProductFilters): Promise<BackendProd
   const url = `${API_URL}/products${queryString ? `?${queryString}` : ""}`;
 
   const res = await apiFetch(url);
-  // Backend returns a paginated object { data, total, page, limit, totalPages }
-  // but some endpoints may return directly an array. Normalize to array.
   if (res && Array.isArray(res)) return res as BackendProduct[];
   if (res && res.data && Array.isArray(res.data)) return res.data as BackendProduct[];
   return [] as BackendProduct[];
@@ -105,29 +107,27 @@ export async function createProduct(data: {
   });
 }
 
-export async function updateProduct(id: number, data: Partial<BackendProduct>): Promise<BackendProduct> {
+// ✅ Corregido: id cambiado a string para aceptar UUIDs y método PATCH según Swagger
+export async function updateProduct(id: string, data: Partial<BackendProduct>): Promise<BackendProduct> {
   return apiFetch(`${API_URL}/products/${id}`, {
-    method: "PUT",
+    method: "PATCH", 
     body: JSON.stringify(data),
   });
 }
 
-export async function deleteProduct(id: number): Promise<void> {
+// ✅ Corregido: id cambiado a string para aceptar UUIDs
+export async function deleteProduct(id: string): Promise<void> {
   return apiFetch(`${API_URL}/products/${id}`, {
     method: "DELETE",
   });
 }
 
-// Orders - MODIFICADO PARA PRECIOS REALES
+// Orders
 export async function createOrder(data: { 
   userId: string; 
-  items: { productId: string; quantity: number; price?: number }[]; // Añadimos price opcional
+  items: { productId: string; quantity: number; price?: number }[]; 
   address?: any; 
 }): Promise<any> {
-  
-  // Si el backend necesita el precio total calculado o precios individuales,
-  // nos aseguramos de que viajen multiplicados por 1000 si los incluimos.
-  
   return apiFetch(`${API_URL}/order`, {
     method: 'POST',
     body: JSON.stringify(data),
@@ -136,18 +136,15 @@ export async function createOrder(data: {
 
 // Mercado Pago
 export async function createPreference(data: { orderId: string; userId: string }): Promise<any> {
-  // Obtenemos la URL base (http://localhost:3000 o tu dominio en Vercel)
   const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
 
   const payload = {
     ...data,
-    // Agregamos las URLs a donde MP debe volver al terminar
     back_urls: {
       success: `${baseUrl}/checkout/success`,
       failure: `${baseUrl}/checkout/failure`,
       pending: `${baseUrl}/checkout/pending`,
     },
-    // Esto hace que si el pago es exitoso, vuelva solo a tu web
     auto_return: "approved", 
   };
 

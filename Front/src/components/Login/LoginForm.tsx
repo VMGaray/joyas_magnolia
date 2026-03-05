@@ -3,19 +3,16 @@
 import Link from "next/link";
 import { Mail, Lock, ArrowRight, Loader2 } from "lucide-react";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { notifyError } from "@/components/helpers/Toast";
 import { WelcomeModal } from "./WelcomeModal";
 
 export const LoginForm = () => {
-  const router = useRouter();
   const { login } = useAuth();
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // 👇 estados para el modal
   const [welcomeMessage, setWelcomeMessage] = useState<string | null>(null);
   const [userName, setUserName] = useState<string>("");
 
@@ -37,8 +34,6 @@ export const LoginForm = () => {
     setLoading(true);
 
     try {
-      console.log("Login payload:", formData);
-
       const response = await fetch("http://localhost:4000/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -46,8 +41,6 @@ export const LoginForm = () => {
       });
 
       const responseText = await response.text();
-      console.log("Raw login response:", responseText);
-
       let token: string | null = null;
 
       try {
@@ -57,7 +50,6 @@ export const LoginForm = () => {
         if (response.ok && responseText.length > 100) {
           token = responseText;
         } else {
-          console.warn("No se pudo parsear la respuesta como JSON");
           token = null;
         }
       }
@@ -67,35 +59,33 @@ export const LoginForm = () => {
       }
 
       const cleanToken = token.replace(/^"|"$/g, "");
+      
+      // 1. Ejecutamos el login (esto guarda el token en localStorage)
       await login(cleanToken);
 
-      // Esperar un poco para que localStorage se sincronice
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // 2. Pequeña espera para sincronización de localStorage
+      await new Promise(resolve => setTimeout(resolve, 300));
 
-      // Obtener usuario del localStorage
       const storedUser = localStorage.getItem("user");
       const parsedUser = storedUser ? JSON.parse(storedUser) : null;
 
-      console.log("👤 Usuario guardado en localStorage:", parsedUser);
-      console.log("🔐 isAdmin?", parsedUser?.isAdmin);
-
-      // Mostrar modal primero
+      // 3. Mostramos el Modal de Bienvenida de Magnolia
       if (parsedUser?.isAdmin) {
         setWelcomeMessage("Ingreso exitoso ✨");
         setUserName(parsedUser.username || "Admin");
 
-        // Redirigir después de 2 segundos
+        // ✅ REGLA DE ORO: Usamos window.location.replace para evitar el parpadeo
+        // Esto limpia el historial y fuerza al navegador a entrar al admin "limpio"
         setTimeout(() => {
-          router.push("/admin");
-        }, 2000);
+          window.location.replace("/admin");
+        }, 1500);
       } else {
         setWelcomeMessage("Ingreso exitoso 🛍️");
         setUserName(parsedUser.username || "Usuario");
 
-        // Redirigir después de 2 segundos
         setTimeout(() => {
-          router.push("/");
-        }, 2000);
+          window.location.replace("/");
+        }, 1500);
       }
 
     } catch (err: any) {
@@ -191,7 +181,6 @@ export const LoginForm = () => {
         </Link>
       </div>
 
-      {/* 👇 Aquí se renderiza el modal */}
       {welcomeMessage && (
         <WelcomeModal
           message={welcomeMessage}

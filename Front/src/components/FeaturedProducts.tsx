@@ -1,116 +1,115 @@
 'use client';
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Star, ShoppingBag } from "lucide-react";
+import { ShoppingBag, Loader2, Sparkles, Star } from "lucide-react";
 import { adaptBackendProducts } from "@/lib/adapters";
-import { useState, useEffect } from "react";
 
 export default function FeaturedProducts() {
-  const [backendProducts, setBackendProducts] = useState<any[] | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isError, setIsError] = useState(false);
+  const [products, setProducts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    let mounted = true;
-    setIsLoading(true);
-    fetch("http://localhost:4000/product-ratings/featured?limit=3")
-      .then((res) => {
-        if (!res.ok) throw new Error("Error fetching featured");
-        return res.json();
-      })
-      .then((data) => {
-        if (!mounted) return;
-        setBackendProducts(data || []);
-        setIsLoading(false);
-      })
-      .catch((err) => {
-        console.error("Error loading featured products:", err);
-        if (!mounted) return;
-        setIsError(true);
-        setIsLoading(false);
-      });
-
-    return () => {
-      mounted = false;
+    const fetchFeatured = async () => {
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products/tags/destacado`);
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+        setProducts(adaptBackendProducts(data).slice(0, 5));
+      } catch (err) {
+        console.error("Error al cargar destacados");
+      } finally {
+        setLoading(false);
+      }
     };
+    fetchFeatured();
   }, []);
 
-  if (isLoading) {
-    return (
-      <section className="py-16 bg-white">
-        <div className="container mx-auto px-4">
-          <h2 className="font-serif text-3xl md:text-4xl text-magnolia-dark mb-12 text-left">
-            Piezas Destacadas
-          </h2>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-x-4 gap-y-10">
-            {[...Array(5)].map((_, i) => (
-              <div key={i} className="h-[450px] w-full bg-gray-100 animate-pulse rounded-sm"></div>
-            ))}
-          </div>
-        </div>
-      </section>
-    );
-  }
+  if (loading) return (
+    <div className="py-24 flex flex-col items-center justify-center gap-4">
+      <Loader2 className="animate-spin text-magnolia-lilac" size={40} />
+      <p className="font-serif italic text-gray-400 animate-pulse uppercase tracking-widest text-[10px]">Cargando Vitrina...</p>
+    </div>
+  );
 
-  if (isError) {
-    return (
-      <section className="py-16 bg-white">
-        <div className="container mx-auto px-4">
-          <h2 className="font-serif text-3xl md:text-4xl text-magnolia-dark mb-12 text-left">
-            Piezas Destacadas
-          </h2>
-          <p className="text-center text-red-500">Error al cargar los productos</p>
-        </div>
-      </section>
-    );
-  }
-
-  const products = adaptBackendProducts(backendProducts || []);
+  if (products.length === 0) return null;
 
   return (
-    <section className="py-16 bg-white">
+    <section id="destacados" className="py-28 bg-gradient-to-b from-white to-[#F9F7FF] overflow-hidden scroll-mt-24">
       <div className="container mx-auto px-4">
-        <h2 className="font-serif text-3xl md:text-4xl text-magnolia-dark mb-12 text-left">
-          Piezas Destacadas
-        </h2>
+        
+        {/* Cabecera */}
+        <div className="flex flex-col items-center mb-20 text-center">
+          <div className="flex items-center gap-4 mb-4">
+            <div className="w-12 h-[1px] bg-magnolia-lilac"></div>
+            <span className="text-magnolia-lilac uppercase tracking-[0.5em] text-[10px] font-black">Exclusivos</span>
+            <div className="w-12 h-[1px] bg-magnolia-lilac"></div>
+          </div>
+          <h2 className="font-serif text-5xl md:text-6xl text-magnolia-dark mb-4 tracking-tighter">Productos Destacados</h2>
+          <p className="font-serif italic text-gray-500 text-lg">Piezas seleccionadas para brillar con vos.</p>
+        </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-x-4 gap-y-10">
+        {/* Grilla */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8">
           {products.map((product) => (
-            // AHORA ENVOLVEMOS TODO EN UN LINK QUE LLEVA A /producto/ID
-            <Link key={product.id} href={`/producto/${product.id}`} className="group relative h-[450px] w-full [perspective:1000px] cursor-pointer block">
+            <Link key={product.id} href={`/producto/${product.id}`} className="group block [perspective:1000px] relative">
               
-              <div className="relative h-full w-full transition-all duration-700 [transform-style:preserve-3d] group-hover:[transform:rotateY(180deg)] shadow-sm hover:shadow-lg rounded-sm">
+              <div className="absolute -inset-1 bg-gradient-to-r from-magnolia-lilac to-magnolia-dark rounded-2xl blur opacity-0 group-hover:opacity-20 transition duration-1000 group-hover:duration-200"></div>
+              
+              <div className="relative h-[500px] w-full transition-transform duration-[1.2s] [transform-style:preserve-3d] group-hover:[transform:rotateY(180deg)] shadow-sm rounded-2xl bg-white">
                 
-                {/* CARA FRONTAL */}
-                <div className="absolute inset-0 h-full w-full bg-white [backface-visibility:hidden] flex flex-col">
-                  <div className="relative flex-grow w-full overflow-hidden bg-gray-50 mb-4">
-                    <Image src={product.image} alt={product.name} fill className="object-cover object-center" />
-                    <span className="absolute top-2 left-2 bg-white text-[10px] uppercase tracking-widest px-2 py-1 text-gray-500 shadow-sm">New</span>
-                  </div>
-                  <div className="text-center space-y-2 pb-4 px-2 h-[100px]">
-                    <div className="flex justify-center gap-1 text-yellow-500/50">
-                       {[...Array(5)].map((_, i) => (
-                          <Star key={i} size={12} fill={i < product.rating ? "currentColor" : "none"} className={i < product.rating ? "text-yellow-400" : "text-gray-300"}/>
-                       ))}
+                {/* CARA FRONTAL: Corregida para no verse al revés y leer nombre completo */}
+                <div className="absolute inset-0 h-full w-full bg-white [backface-visibility:hidden] flex flex-col rounded-2xl overflow-hidden">
+                  <div className="relative flex-grow overflow-hidden bg-[#FDFDFD]">
+                    <div className="absolute top-5 right-5 z-10">
+                      <div className="bg-white/80 backdrop-blur-md p-2 rounded-full shadow-sm">
+                        <Star size={14} className="text-yellow-500" fill="currentColor" />
+                      </div>
                     </div>
-                    <h3 className="font-serif text-gray-800 text-lg leading-tight">{product.name}</h3>
-                    <p className="font-sans text-gray-500 font-light tracking-wide">{product.formattedPrice}</p>
+                    <Image src={product.image} alt={product.name} fill className="object-cover transition-transform duration-1000 group-hover:scale-110" />
+                  </div>
+                  
+                  {/* Nombre y Precio Frontal: Ajustado para nombres largos */}
+                  <div className="p-6 text-center bg-white flex flex-col justify-center min-h-[140px]">
+                    <h3 className="font-serif text-gray-800 text-[17px] mb-2 leading-tight px-1 overflow-hidden">
+                      {product.name}
+                    </h3>
+                    <div className="w-8 h-[1px] bg-magnolia-lilac/30 mx-auto mb-3"></div>
+                    <p className="text-magnolia-dark font-black text-sm tracking-widest uppercase">
+                      {product.formattedPrice}
+                    </p>
                   </div>
                 </div>
 
-                {/* CARA TRASERA */}
-                <div className="absolute inset-0 h-full w-full bg-magnolia-light border border-magnolia-lilac/30 p-6 flex flex-col items-center justify-center text-center [transform:rotateY(180deg)] [backface-visibility:hidden]">
-                  <h3 className="font-serif text-magnolia-dark text-xl mb-4">{product.name}</h3>
-                  <p className="font-sans text-gray-600 text-sm leading-relaxed mb-8 font-light line-clamp-4">{product.description}</p>
-                  <button className="flex items-center gap-2 bg-magnolia-dark text-white px-6 py-3 text-xs uppercase tracking-widest hover:bg-magnolia-lilac transition-colors shadow-md">
-                    <ShoppingBag size={14} />
-                    Ver Detalle
+                {/* CARA TRASERA: Corregida sin errores de sintaxis y texto derecho */}
+                <div className="absolute inset-0 h-full w-full bg-magnolia-dark [transform:rotateY(180deg)] [backface-visibility:hidden] flex flex-col items-center justify-center p-8 text-center border-2 border-magnolia-lilac/20 rounded-2xl overflow-hidden">
+                  <div className="mb-4 opacity-0 group-hover:opacity-100 transition-opacity duration-700 delay-300">
+                    <Sparkles className="text-magnolia-lilac mb-4 mx-auto" size={24} />
+                    <h3 className="text-white font-serif text-xl mb-3 leading-tight px-2">{product.name}</h3>
+                    <div className="w-10 h-[1px] bg-magnolia-lilac/40 mx-auto mb-4"></div>
+                    <p className="text-gray-300 text-[11px] leading-relaxed font-light line-clamp-6 italic">
+                      {product.description || "Una expresión única de elegancia y sofisticación de Magnolia Joyas."}
+                    </p>
+                  </div>
+                  <button className="mt-auto flex items-center gap-3 bg-white text-magnolia-dark px-6 py-3 text-[9px] font-black uppercase tracking-widest hover:bg-magnolia-lilac hover:text-white transition-all shadow-lg active:scale-95">
+                    <ShoppingBag size={14} /> Ver Detalles
                   </button>
                 </div>
+
               </div>
             </Link>
           ))}
+        </div>
+
+        {/* Footer de Sección */}
+        <div className="mt-24 text-center">
+          <Link href="/catalogo" className="group inline-flex flex-col items-center">
+            <span className="text-sm font-bold uppercase tracking-[0.4em] text-magnolia-dark group-hover:text-magnolia-lilac transition-colors">
+              Explorar Colección Completa
+            </span>
+            <div className="w-0 h-[1px] bg-magnolia-lilac group-hover:w-full transition-all duration-500 mt-2"></div>
+          </Link>
         </div>
       </div>
     </section>

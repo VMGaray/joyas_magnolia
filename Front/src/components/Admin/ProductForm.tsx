@@ -7,6 +7,8 @@ import {
   ProductType, 
   getSubtypesForProductType 
 } from "@/lib/classification.enum";
+import { Loader2, Tag, Check, Star } from "lucide-react";
+import { notifySuccess, notifyError } from "@/components/helpers/Toast";
 
 interface FormData {
   name: string;
@@ -21,20 +23,36 @@ interface FormData {
   bracelets_subtype: string;
   pendants_subtype: string;
   imageUrl: string;
+  tags: string; 
 }
 
 interface ProductFormProps {
-  initialValues?: Partial<FormData>;
-  onSubmit: (values: FormData) => void;
+  initialValues?: any;
+  onSubmit: (values: any) => void;
   onCancel?: () => void;
 }
 
+const defaultValues: FormData = {
+  name: "",
+  description: "",
+  price: "",
+  stock: "",
+  category: "",
+  productType: "",
+  rings_subtype: "",
+  earrings_subtype: "",
+  chains_subtype: "",
+  bracelets_subtype: "",
+  pendants_subtype: "",
+  imageUrl: "",
+  tags: "",
+};
 
 export default function ProductForm({ initialValues, onSubmit, onCancel }: ProductFormProps) {
   const [formData, setFormData] = useState<FormData>({
     name: initialValues?.name || "",
     description: initialValues?.description || "",
-    price: initialValues?.price || "",
+    price: initialValues?.price ? Number(initialValues.price) * 1000 : "",
     stock: initialValues?.stock || "",
     category: initialValues?.category || "",
     productType: initialValues?.productType || "",
@@ -44,253 +62,224 @@ export default function ProductForm({ initialValues, onSubmit, onCancel }: Produ
     bracelets_subtype: initialValues?.bracelets_subtype || "",
     pendants_subtype: initialValues?.pendants_subtype || "",
     imageUrl: initialValues?.imageUrl || "",
+    tags: Array.isArray(initialValues?.tags) ? initialValues.tags.join(", ") : "",
   });
 
   const [file, setFile] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string | null>(null);
+  const [preview, setPreview] = useState<string | null>(initialValues?.imageUrl || null);
   const [subtypes, setSubtypes] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  const handleChange = (field: keyof FormData, value: string) => {
-    setFormData({ ...formData, [field]: value });
-
-    // Si cambió el tipo de producto, obtener los subtipos
-    if (field === "productType" && value) {
-      const subtypesMap = getSubtypesForProductType(value);
-      setSubtypes(Object.values(subtypesMap));
-    }
-  };
+  // Opciones rápidas para que no tengas que escribir
+  const commonTags = ["destacado", "promo", "nueva colección", "sale"];
 
   useEffect(() => {
-    // Si ya hay un tipo de producto seleccionado, cargar sus subtipos
     if (formData.productType) {
       const subtypesMap = getSubtypesForProductType(formData.productType);
       setSubtypes(Object.values(subtypesMap));
+    } else {
+      setSubtypes([]);
     }
   }, [formData.productType]);
 
+  const handleChange = (field: keyof FormData, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const toggleTag = (tag: string) => {
+    const currentTags = formData.tags.split(",").map(t => t.trim().toLowerCase()).filter(t => t !== "");
+    if (currentTags.includes(tag)) {
+      const newTags = currentTags.filter(t => t !== tag);
+      setFormData({ ...formData, tags: newTags.join(", ") });
+    } else {
+      const newTags = [...currentTags, tag];
+      setFormData({ ...formData, tags: newTags.join(", ") });
+    }
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0] || null;
-    setFile(selectedFile);
     if (selectedFile) {
+      setFile(selectedFile);
       setPreview(URL.createObjectURL(selectedFile));
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
 
-    const form = new FormData();
-
-    form.append("name", formData.name);
-    form.append("description", formData.description);
-    form.append("price", String(formData.price));
-    form.append("stock", String(formData.stock));
-    form.append("category", formData.category);
-    form.append("productType", formData.productType);
-
-    if (formData.productType === ProductType.Rings && formData.rings_subtype) {
-      form.append("rings_subtype", formData.rings_subtype);
-    }
-    if (formData.productType === ProductType.Earrings && formData.earrings_subtype) {
-      form.append("earrings_subtype", formData.earrings_subtype);
-    }
-    if (formData.productType === ProductType.Chains && formData.chains_subtype) {
-      form.append("chains_subtype", formData.chains_subtype);
-    }
-    if (formData.productType === ProductType.Bracelets && formData.bracelets_subtype) {
-      form.append("bracelets_subtype", formData.bracelets_subtype);
-    }
-    if (formData.productType === ProductType.Pendants && formData.pendants_subtype) {
-      form.append("pendants_subtype", formData.pendants_subtype);
-    }
-
-    if (file) {
-      form.append("file", file);
-    }
+    const isEditing = Boolean(initialValues?.id);
+    const token = localStorage.getItem("token");
 
     try {
-      const res = await fetch("http://localhost:4000/products", {
-        method: "POST",
+      const productData = {
+        ...formData,
+        price: Number(formData.price) / 1000, 
+        stock: Number(formData.stock),
+        tags: formData.tags.split(",").map(t => t.trim().toLowerCase()).filter(t => t !== ""),
+      };
+
+      const url = isEditing 
+        ? `${process.env.NEXT_PUBLIC_API_URL}/products/${initialValues?.id}`
+        : `${process.env.NEXT_PUBLIC_API_URL}/products`;
+
+      const res = await fetch(url, {
+        method: isEditing ? "PATCH" : "POST",
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-        body: form,
+        body: JSON.stringify(productData),
       });
 
-      if (!res.ok) throw new Error("Error al crear producto");
-      const data = await res.json();
-      onSubmit(data);
-    } catch (err) {
-      console.error("❌ Error al crear producto:", err);
+      if (!res.ok) throw new Error("Error al guardar producto");
+      const savedProduct = await res.json();
+
+      if (file && savedProduct.id) {
+        const imgForm = new FormData();
+        imgForm.append("file", file);
+        await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products/${savedProduct.id}/image`, {
+          method: "PUT",
+          headers: { Authorization: `Bearer ${token}` },
+          body: imgForm,
+        });
+      }
+
+      notifySuccess(isEditing ? "¡Pieza actualizada!" : "¡Nueva joya creada!");
+      onSubmit(savedProduct);
+    } catch (err: any) {
+      notifyError(err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-white p-6 rounded shadow">
-      {/* Nombre */}
+    <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+      
+      {/* Nombre y Precio */}
       <div className="space-y-2">
-        <label className="block text-sm font-medium text-gray-700">Nombre</label>
-        <input
-          type="text"
-          value={formData.name}
-          onChange={(e) => handleChange("name", e.target.value)}
-          required
-          className="w-full border px-3 py-2 rounded"
-        />
+        <label className="text-[10px] uppercase tracking-widest font-bold text-gray-400">Nombre de la Joya</label>
+        <input type="text" value={formData.name} onChange={(e) => handleChange("name", e.target.value)} required className="w-full border border-gray-200 px-4 py-3 rounded-sm focus:border-magnolia-lilac outline-none" />
       </div>
 
-      {/* Descripción */}
-      <div className="space-y-2 md:col-span-2">
-        <label className="block text-sm font-medium text-gray-700">Descripción</label>
-        <textarea
-          value={formData.description}
-          onChange={(e) => handleChange("description", e.target.value)}
-          required
-          className="w-full border px-3 py-2 rounded"
-        />
-      </div>
-
-      {/* Precio */}
       <div className="space-y-2">
-        <label className="block text-sm font-medium text-gray-700">Precio</label>
-        <input
-          type="number"
-          value={formData.price}
-          onChange={(e) => handleChange("price", e.target.value)}
-          required
-          className="w-full border px-3 py-2 rounded"
-        />
+        <label className="text-[10px] uppercase tracking-widest font-bold text-gray-400">Precio (AR$)</label>
+        <input type="number" value={formData.price} onChange={(e) => handleChange("price", e.target.value)} required className="w-full border border-gray-200 px-4 py-3 rounded-sm focus:border-magnolia-lilac outline-none font-bold" />
       </div>
 
-      {/* Stock */}
+      <div className="md:col-span-2 space-y-2">
+        <label className="text-[10px] uppercase tracking-widest font-bold text-gray-400">Descripción</label>
+        <textarea value={formData.description} onChange={(e) => handleChange("description", e.target.value)} rows={2} className="w-full border border-gray-200 px-4 py-3 rounded-sm focus:border-magnolia-lilac outline-none" />
+      </div>
+
+      {/* Clasificación obligatoria */}
       <div className="space-y-2">
-        <label className="block text-sm font-medium text-gray-700">Stock</label>
-        <input
-          type="number"
-          value={formData.stock}
-          onChange={(e) => handleChange("stock", e.target.value)}
-          required
-          className="w-full border px-3 py-2 rounded"
-        />
+        <label className="text-[10px] uppercase tracking-widest font-bold text-gray-400">Metal (Categoría)</label>
+        <select value={formData.category} onChange={(e) => handleChange("category", e.target.value)} required className="w-full border border-gray-200 px-4 py-3 rounded-sm focus:border-magnolia-lilac outline-none">
+          <option value="">Seleccionar metal</option>
+          {Object.values(Category).map((cat) => <option key={cat} value={cat}>{cat}</option>)}
+        </select>
       </div>
 
-      {/* Categoría */}
-<div className="space-y-2">
-  <label className="block text-sm font-medium text-gray-700">Categoría</label>
-  <select
-    value={formData.category}
-    onChange={(e) => handleChange("category", e.target.value)}
-    required
-    className="w-full border px-3 py-2 rounded"
-  >
-    <option value="">Seleccionar categoría</option>
-    {Object.values(Category).map((cat) => (
-      <option key={cat} value={cat}>
-        {cat}
-      </option>
-    ))}
-  </select>
-</div>
+      <div className="space-y-2">
+        <label className="text-[10px] uppercase tracking-widest font-bold text-gray-400">Tipo de Producto</label>
+        <select value={formData.productType} onChange={(e) => handleChange("productType", e.target.value)} required className="w-full border border-gray-200 px-4 py-3 rounded-sm focus:border-magnolia-lilac outline-none">
+          <option value="">Seleccionar tipo</option>
+          {Object.values(ProductType).map((type) => <option key={type} value={type}>{type}</option>)}
+        </select>
+      </div>
 
-{/* Tipo de producto */}
-<div className="space-y-2">
-  <label className="block text-sm font-medium text-gray-700">Tipo de producto</label>
-  <select
-    value={formData.productType}
-    onChange={(e) => handleChange("productType", e.target.value)}
-    required
-    className="w-full border px-3 py-2 rounded"
-  >
-    <option value="">Seleccionar tipo</option>
-    {Object.values(ProductType).map((type) => (
-      <option key={type} value={type}>
-        {type}
-      </option>
-    ))}
-  </select>
-</div>
+      {/* Subtipos dinámicos */}
+      {subtypes.length > 0 && (
+        <div className="space-y-2">
+          <label className="text-[10px] uppercase tracking-widest font-bold text-gray-400">Subtipo Específico</label>
+          <select
+            value={
+              formData.productType === ProductType.Rings ? formData.rings_subtype :
+              formData.productType === ProductType.Earrings ? formData.earrings_subtype :
+              formData.productType === ProductType.Chains ? formData.chains_subtype :
+              formData.productType === ProductType.Bracelets ? formData.bracelets_subtype :
+              formData.productType === ProductType.Pendants ? formData.pendants_subtype : ""
+            }
+            onChange={(e) => {
+              const fieldMap: any = {
+                [ProductType.Rings]: "rings_subtype",
+                [ProductType.Earrings]: "earrings_subtype",
+                [ProductType.Chains]: "chains_subtype",
+                [ProductType.Bracelets]: "bracelets_subtype",
+                [ProductType.Pendants]: "pendants_subtype",
+              };
+              handleChange(fieldMap[formData.productType], e.target.value);
+            }}
+            className="w-full border border-gray-200 px-4 py-3 rounded-sm focus:border-magnolia-lilac outline-none"
+          >
+            <option value="">Seleccionar subtipo</option>
+            {subtypes.map((s) => <option key={s} value={s}>{s}</option>)}
+          </select>
+        </div>
+      )}
 
+      <div className="space-y-2">
+        <label className="text-[10px] uppercase tracking-widest font-bold text-gray-400">Stock</label>
+        <input type="number" value={formData.stock} onChange={(e) => handleChange("stock", e.target.value)} required className="w-full border border-gray-200 px-4 py-3 rounded-sm focus:border-magnolia-lilac outline-none" />
+      </div>
 
-{/* Subtipo dinámico - SELECT en lugar de INPUT */}
-{formData.productType && [ProductType.Rings, ProductType.Earrings, ProductType.Chains, ProductType.Bracelets, ProductType.Pendants].includes(formData.productType as ProductType) && (
-  <div className="space-y-2">
-    <label className="block text-sm font-medium text-gray-700">
-      Subtipo {formData.productType && `(${formData.productType})`}
-    </label>
-    {!subtypes.length ? (
-      <p className="text-xs text-gray-400">No hay subtipos disponibles para este tipo</p>
-    ) : (
-      <select
-        value={
-          formData.productType === ProductType.Rings
-            ? formData.rings_subtype
-            : formData.productType === ProductType.Earrings
-            ? formData.earrings_subtype
-            : formData.productType === ProductType.Chains
-            ? formData.chains_subtype
-            : formData.productType === ProductType.Bracelets
-            ? formData.bracelets_subtype
-            : formData.productType === ProductType.Pendants
-            ? formData.pendants_subtype
-            : ""
-        }
-        onChange={(e) => {
-          if (formData.productType === ProductType.Rings) handleChange("rings_subtype", e.target.value);
-          else if (formData.productType === ProductType.Earrings) handleChange("earrings_subtype", e.target.value);
-          else if (formData.productType === ProductType.Chains) handleChange("chains_subtype", e.target.value);
-          else if (formData.productType === ProductType.Bracelets) handleChange("bracelets_subtype", e.target.value);
-          else if (formData.productType === ProductType.Pendants) handleChange("pendants_subtype", e.target.value);
-        }}
-        className="w-full border px-3 py-2 rounded focus:outline-none focus:border-magnolia-lilac"
-      >
-        <option value="">Seleccionar subtipo</option>
-        {subtypes.map((subtype) => (
-          <option key={subtype} value={subtype}>
-            {subtype}
-          </option>
-        ))}
-      </select>
-    )}
-  </div>
-)}
+      {/* Sección de Tags / Destacados */}
+      <div className="md:col-span-2 space-y-4 p-5 bg-gray-50 rounded-2xl border border-gray-100 shadow-inner">
+        <div className="flex items-center justify-between">
+          <label className="text-[10px] uppercase font-black text-magnolia-dark flex items-center gap-2 tracking-[0.2em]">
+            <Tag size={12} /> Etiquetas y Promociones
+          </label>
+          <span className="text-[9px] text-gray-400 italic font-serif">Marcá "destacado" para la Home</span>
+        </div>
 
-            {/* Imagen */}
-      <div className="space-y-2 md:col-span-2">
-        <label className="block text-sm font-medium text-gray-700">Imagen</label>
-        <input
-          type="file"
-          accept="image/*"
-          onChange={handleFileChange}
-          className="w-full"
-        />
-        {preview && (
-          <div className="relative w-32 h-32 rounded border mt-2 overflow-hidden">
-            <Image
-              src={preview}
-              alt="Vista previa"
-              fill
-              className="object-cover"
-            />
-          </div>
-        )}
+        <div className="flex flex-wrap gap-2">
+          {commonTags.map((tag) => {
+            const isActive = formData.tags.toLowerCase().includes(tag);
+            return (
+              <button
+                key={tag}
+                type="button"
+                onClick={() => toggleTag(tag)}
+                className={`px-3 py-1.5 rounded-full text-[10px] font-bold uppercase transition-all flex items-center gap-1 border ${
+                  isActive 
+                    ? "bg-magnolia-dark border-magnolia-dark text-white shadow-md" 
+                    : "bg-white border-gray-200 text-gray-400 hover:border-magnolia-lilac"
+                }`}
+              >
+                {isActive && (tag === "destacado" ? <Star size={10} fill="currentColor" /> : <Check size={10} />)}
+                {tag}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="pt-2">
+          <input 
+            type="text" 
+            placeholder="Escribí otras etiquetas separadas por coma..."
+            value={formData.tags} 
+            onChange={(e) => handleChange("tags", e.target.value)}
+            className="w-full border-b border-gray-200 bg-transparent px-2 py-2 text-xs outline-none focus:border-magnolia-lilac font-medium text-gray-600"
+          />
+        </div>
+      </div>
+
+      {/* Imagen */}
+      <div className="md:col-span-2 pt-4 border-t border-gray-50 flex items-center gap-6">
+        <div className="relative w-24 h-24 bg-gray-50 rounded-lg border border-dashed border-gray-200 flex items-center justify-center overflow-hidden">
+          {preview ? <Image src={preview} alt="Preview" fill className="object-cover" /> : <span className="text-[8px] text-gray-400 uppercase">Sin imagen</span>}
+        </div>
+        <input type="file" accept="image/*" onChange={handleFileChange} className="text-[10px] text-gray-400" />
       </div>
 
       {/* Botones */}
-      <div className="col-span-2 flex justify-end gap-2">
-        {onCancel && (
-          <button
-            type="button"
-            onClick={onCancel}
-            className="bg-gray-300 px-4 py-2 rounded hover:bg-gray-400"
-          >
-            Cancelar
-          </button>
-        )}
-        <button
-          type="submit"
-          className="bg-magnolia-dark text-white px-6 py-2 rounded hover:bg-magnolia-lilac transition"
-        >
-          Guardar
+      <div className="md:col-span-2 flex justify-end gap-4 pt-6">
+        {onCancel && <button type="button" onClick={onCancel} className="text-[10px] font-bold uppercase text-gray-400">Cancelar</button>}
+        <button type="submit" disabled={loading} className="bg-magnolia-dark text-white px-10 py-3 text-[10px] font-bold uppercase tracking-widest hover:bg-magnolia-lilac transition-all">
+          {loading ? <Loader2 className="animate-spin" size={16} /> : "Guardar Joya"}
         </button>
       </div>
     </form>

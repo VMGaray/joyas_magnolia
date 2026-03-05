@@ -1,37 +1,39 @@
+'use client';
+
 import { BackendProduct } from './api';
 
-// Tipo del producto que usa el frontend
 export interface FrontendProduct {
-  id: number;
+  id: string; 
   name: string;
   price: number;
   formattedPrice: string;
   image: string;
   rating: number;
   description: string;
-  category: string; // slug del tipo de producto (anillos, pulseras, etc.)
-  material: string; // slug de la categoría (plata-925, oro-18kl, enchapado)
+  category: string; 
+  material: string; 
   images: string[];
   stock: number;
-  
+  tags: string[]; // ✅ Nuevo campo de etiquetas
+  isFeatured: boolean; // ✅ Ahora depende de si existe el tag "destacado"
 }
 
-// Convierte nombres a slugs
 function toSlug(text: string): string {
   return text
     .toLowerCase()
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '') // quitar acentos
+    .replace(/[\u0300-\u036f]/g, '')
     .replace(/\s+/g, '-')
     .replace(/[^\w-]+/g, '');
 }
 
-// Formatea el precio al estilo argentino
 function formatPrice(price: number): string {
-  return `$${price.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+  return `$${price.toLocaleString('es-AR', { 
+    minimumFractionDigits: 0, 
+    maximumFractionDigits: 0 
+  })}`;
 }
 
-// Convierte categoría del backend a material del frontend
 function categoryToMaterial(categoryName: string): string {
   const mapping: Record<string, string> = {
     'Plata 925': 'plata-925',
@@ -40,18 +42,18 @@ function categoryToMaterial(categoryName: string): string {
     'Insumos': 'insumos',
     'Personalizados': 'personalizados',
   };
-
   return mapping[categoryName] || toSlug(categoryName);
 }
 
-// Adapta un producto del backend al formato del frontend
 export function adaptBackendProduct(backendProduct: BackendProduct): FrontendProduct {
   const defaultImage = '/cat-anillos.jpg';
   const image = backendProduct.imageUrl && !backendProduct.imageUrl.includes('ejemplo.com')
     ? backendProduct.imageUrl
     : defaultImage;
 
-  // support backendProduct.category/productType as either string or object { id, name }
+  const inputPrice = Number(backendProduct.price || 0);
+  const realPrice = inputPrice < 1000 ? inputPrice * 1000 : inputPrice;
+
   const productTypeName = typeof backendProduct.productType === 'string'
     ? backendProduct.productType
     : (backendProduct.productType as any)?.name;
@@ -60,30 +62,31 @@ export function adaptBackendProduct(backendProduct: BackendProduct): FrontendPro
     ? backendProduct.category
     : (backendProduct.category as any)?.name;
 
+  // ✅ Procesamos los tags del backend
+  const productTags = Array.isArray(backendProduct.tags) ? backendProduct.tags : [];
+
   return {
-    id: backendProduct.id,
+    id: String(backendProduct.id), 
     name: backendProduct.name,
-    price: backendProduct.price,
-    formattedPrice: formatPrice(backendProduct.price),
+    price: realPrice,
+    formattedPrice: formatPrice(realPrice),
     image: image,
     rating: 5,
-    description: backendProduct.description,
+    description: backendProduct.description || "",
     category: toSlug(productTypeName || 'sin-tipo'),
     material: categoryToMaterial(categoryName || 'sin-categoria'),
     images: [image],
     stock: typeof backendProduct.stock === "number" ? backendProduct.stock : 0,
+    tags: productTags,
+    // ✅ Es destacado si incluye la palabra exacta en minúsculas
+    isFeatured: productTags.includes("destacado"), 
   };
 }
 
-
-// Adapta un array de productos
 export function adaptBackendProducts(backendProducts: BackendProduct[]): FrontendProduct[] {
-  // 🛡️ PROTECCIÓN: Si no es un array, devolvemos lista vacía y no rompemos la app
   if (!backendProducts || !Array.isArray(backendProducts)) {
-    console.error("🚨 Error en adaptador: Se esperaba un array pero llegó:", backendProducts);
+    console.error("🚨 Error en adaptador:", backendProducts);
     return []; 
   }
-
-  // Si todo está bien, hacemos el mapa
   return backendProducts.map(adaptBackendProduct);
 }

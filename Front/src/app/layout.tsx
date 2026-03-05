@@ -7,6 +7,7 @@ import CartSidebar from "../components/CartSidebar";
 import { WishlistProvider } from "../context/WishlistContext";
 import { AuthProvider } from "../context/AuthContext";
 import { ToastProvider } from "@/components/helpers/Toast";
+import AdminBar from "@/components/Admin/AdminBar"; 
 import "./globals.css";
 
 // ... (Fuentes y metadata siguen igual) ...
@@ -37,6 +38,7 @@ export default function RootLayout({
     <body className={`${playfair.variable} ${lato.variable} font-sans antialiased`}>
       {/* ENVOLVEMOS TODO CON EL CART PROVIDER */}
       <AuthProvider>
+        <AdminBar />
         <CartProvider>
           <WishlistProvider>
             <Navbar />
