@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, Brackets } from 'typeorm';
 import { Product } from './entities/product.entity';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
@@ -95,6 +95,19 @@ export class ProductsService {
       );
     }
 
+    if (filters.tags && filters.tags.length > 0) {
+      qb.andWhere(
+        new Brackets((innerQb) => {
+          filters.tags?.forEach((tag, index) => {
+            const paramName = `tag${index}`;
+            innerQb.orWhere(`product.tags LIKE :${paramName}`, {
+              [paramName]: `%${tag}%`,
+            });
+          });
+        }),
+      );
+    }
+
     const [data, total] = await qb.skip(skip).take(limit).getManyAndCount();
 
     return {
@@ -177,5 +190,51 @@ export class ProductsService {
       default:
         return [];
     }
+  }
+
+  async findByTag(tagsString: string) {
+    const tags = tagsString.split(',').map((tag) => tag.trim()).filter((tag) => tag.length > 0);
+
+    if (tags.length === 0) return [];
+
+    return this.productRepository
+      .createQueryBuilder('product')
+      .where(
+        new Brackets((innerQb) => {
+          tags.forEach((tag, index) => {
+            const paramName = `tag${index}`;
+            innerQb.orWhere(`product.tags LIKE :${paramName}`, {
+              [paramName]: `%${tag}%`,
+            });
+          });
+        }),
+      )
+      .getMany();
+  }
+
+  async removeTag(idProduct: string, tagToRemove: string) {
+    const product = await this.findOne(idProduct);
+
+    if (product.tags) {
+      product.tags = product.tags.filter((t) => t !== tagToRemove);
+      return this.productRepository.save(product);
+    }
+
+    return product;
+  }
+
+  async getAllTags() {
+    const products = await this.productRepository.find({
+      select: ['tags'],
+    });
+
+    const allTags = new Set<string>();
+    products.forEach((p) => {
+      if (p.tags) {
+        p.tags.forEach((tag) => allTags.add(tag));
+      }
+    });
+
+    return Array.from(allTags);
   }
 }

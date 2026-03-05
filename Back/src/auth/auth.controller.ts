@@ -66,24 +66,32 @@ export class AuthController {
     return this.authService.changePassword(id, data);
   }
 
+  @ApiBearerAuth()
+  @Roles(Role.User)
   @ApiOperation({ summary: 'Delete user account' })
   @Delete('delete-account/:id')
   async deleteAccount(@Param('id') id: string) {
     return this.authService.deleteUser(id);
   }
 
+  @ApiBearerAuth()
+  @Roles(Role.User)
   @ApiOperation({ summary: 'Request password reset' })
   @Post('forgot-password')
   async forgotPassword(@Body() data: ForgotPasswordDto) {
     return this.authService.forgotPassword(data);
   }
 
+  @ApiBearerAuth()
+  @Roles(Role.User)
   @ApiOperation({ summary: 'Verify reset code' })
   @Post('verify-code')
   async verifyCode(@Body() data: VerifyCodeDto) {
     return this.authService.verifyResetCode(data);
   }
 
+  @ApiBearerAuth()
+  @Roles(Role.User)
   @ApiOperation({ summary: 'Reset password' })
   @Post('reset-password')
   async resetPassword(@Body() data: ResetPasswordDto) {

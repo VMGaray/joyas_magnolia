@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { BraceletsSubtypes, Category, ChainsSubtypes, EarringsSubtypes, PendantsSubtypes, ProductType, RingsSubtypes } from '../clasification.enum';
-import { IsEnum, IsNumber, IsOptional, IsString, Min } from 'class-validator';
+import { IsArray, IsEnum, IsNumber, IsOptional, IsString, Min } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
 
 export class CreateProductDto {
@@ -110,4 +110,21 @@ export class CreateProductDto {
   })
   @IsOptional()
   file?: any;
+
+  @ApiProperty({
+    description: 'Etiquetas del producto (ej: Nuevo, Resaltado, Oferta)',
+    type: [String],
+    required: false,
+    example: ['Nuevo', 'Resaltado'],
+  })
+  @IsOptional()
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      return value.split(',').map((tag) => tag.trim()).filter((tag) => tag.length > 0);
+    }
+    return value;
+  })
+  @IsArray()
+  @IsString({ each: true })
+  tags?: string[];
 }

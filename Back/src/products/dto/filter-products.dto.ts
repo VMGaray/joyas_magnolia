@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
-import { IsEnum, IsOptional, IsPositive, Min } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
+import { IsArray, IsEnum, IsOptional, IsPositive, IsString, Min } from 'class-validator';
 import { Category, ProductType } from '../clasification.enum';
 
 export class FilterProductsDto {
@@ -28,6 +28,22 @@ export class FilterProductsDto {
   })
   @IsOptional()
   subtype?: string;
+
+  @ApiProperty({
+    description: 'Filtrar por una o más etiquetas (separadas por coma)',
+    required: false,
+    example: 'Nuevo,Oferta',
+  })
+  @IsOptional()
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      return value.split(',').map((tag) => tag.trim()).filter((tag) => tag.length > 0);
+    }
+    return value;
+  })
+  @IsArray()
+  @IsString({ each: true })
+  tags?: string[];
 
   @ApiProperty({
     description: 'Número de página',

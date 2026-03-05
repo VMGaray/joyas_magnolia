@@ -7,22 +7,22 @@ export class Product {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({type: 'varchar', length: 255, nullable: false})
+  @Column({ type: 'varchar', length: 255, nullable: false })
   name: string;
 
-  @Column({type: 'text', nullable: false})
+  @Column({ type: 'text', nullable: false })
   description: string;
 
-  @Column('decimal', {nullable: false})
+  @Column('decimal', { nullable: false })
   price: number;
 
-  @Column({type: 'int', nullable: false})
+  @Column({ type: 'int', nullable: false })
   stock: number;
 
-  @Column({nullable: true})
+  @Column({ nullable: true })
   isFeatured: boolean;
 
-   @Column('decimal', { precision: 3, scale: 2, nullable: true })
+  @Column('decimal', { precision: 3, scale: 2, nullable: true })
   averageRating: number; // Promedio de puntuaciones
 
   @Column({ default: 0 })
@@ -55,4 +55,6 @@ export class Product {
   @Column({ type: 'enum', enum: PendantsSubtypes, nullable: true })
   pendants_subtype: PendantsSubtypes | null;
 
+  @Column('simple-array', { nullable: true })
+  tags: string[];
 }

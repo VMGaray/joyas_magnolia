@@ -91,13 +91,19 @@ export class ProductsController {
     return this.productsService.getSubtypes(type);
   }
 
-  @Get(':id')
-  @ApiOperation({ summary: 'Obtener un producto por ID' })
-  @ApiParam({ name: 'id', description: 'ID del producto' })
-  @ApiResponse({ status: 200, description: 'Producto obtenido exitosamente' })
-  @ApiResponse({ status: 404, description: 'Producto no encontrado' })
-  findOne(@Param('id') id: string) {
-    return this.productsService.findOne(id);
+  @Get('tags')
+  @ApiOperation({ summary: 'Obtener todas las etiquetas únicas utilizadas' })
+  @ApiResponse({ status: 200, description: 'Lista de etiquetas obtenida' })
+  getAllTags() {
+    return this.productsService.getAllTags();
+  }
+
+  @Get('tags/:tags')
+  @ApiOperation({ summary: 'Obtener productos por una o más etiquetas (separadas por coma)' })
+  @ApiParam({ name: 'tags', description: 'Nombre de la etiqueta o etiquetas (ej: Nuevo,Oferta)' })
+  @ApiResponse({ status: 200, description: 'Lista de productos que coinciden con las etiquetas' })
+  findByTag(@Param('tags') tags: string) {
+    return this.productsService.findByTag(tags);
   }
 
   @Get()
@@ -108,8 +114,35 @@ export class ProductsController {
     status: 200,
     description: 'Lista de productos paginada obtenida exitosamente',
   })
+  @ApiQuery({
+    name: 'tags',
+    required: false,
+    description: 'Filtrar por una o más etiquetas (separadas por coma)',
+    example: 'Nuevo,Oferta',
+  })
   findAll(@Query() filters: FilterProductsDto) {
     return this.productsService.findAll(filters);
+  }
+
+  @Get(':id')
+  @ApiOperation({ summary: 'Obtener un producto por ID' })
+  @ApiParam({ name: 'id', description: 'ID del producto' })
+  @ApiResponse({ status: 200, description: 'Producto obtenido exitosamente' })
+  @ApiResponse({ status: 404, description: 'Producto no encontrado' })
+  findOne(@Param('id') id: string) {
+    return this.productsService.findOne(id);
+  }
+
+  @Delete(':id/tags/:tag')
+  @ApiBearerAuth()
+  @Roles(Role.Admin)
+  @UseGuards(AuthGuard, RolesGuard)
+  @ApiOperation({ summary: 'Eliminar una etiqueta específica de un producto' })
+  @ApiParam({ name: 'id', description: 'ID del producto' })
+  @ApiParam({ name: 'tag', description: 'Etiqueta a eliminar' })
+  @ApiResponse({ status: 200, description: 'Etiqueta eliminada exitosamente' })
+  removeTag(@Param('id') id: string, @Param('tag') tag: string) {
+    return this.productsService.removeTag(id, tag);
   }
 
   @Put(':id/image')
