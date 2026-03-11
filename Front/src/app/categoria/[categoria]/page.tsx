@@ -38,7 +38,6 @@ export default async function CategoriaPage({ params }: { params: Promise<{ cate
 
   const allProducts = await getAllProducts();
 
-  // FILTRADO POR NIVELES PARA EVITAR MEZCLAS
   const products = allProducts.filter(p => {
     const searchSlug = slug.toLowerCase();
     
@@ -82,9 +81,10 @@ export default async function CategoriaPage({ params }: { params: Promise<{ cate
                   </div>
                   <div className="p-4">
                     <h3 className="font-medium text-lg mb-1">{product.name}</h3>
-                    {/* PRECIO CORREGIDO AQUÍ */}
+                    
+                    {/* ✅ PRECIO CORREGIDO: Sin el * 1000 */}
                     <p className="text-xl font-light text-gray-800">
-                      ${(Number(product.price) * 1000).toLocaleString('es-AR', {
+                      ${Number(product.price).toLocaleString('es-AR', {
                         minimumFractionDigits: 0,
                         maximumFractionDigits: 0
                       })}

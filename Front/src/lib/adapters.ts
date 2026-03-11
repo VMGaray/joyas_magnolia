@@ -23,8 +23,10 @@ function toSlug(text: string): string {
   return text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
 }
 
-function formatPrice(price: number): string {
-  // ✅ Formatea con puntos de miles (ej: 56000 -> $56.000)
+/**
+ * ✅ Única fuente de verdad para el formato de moneda.
+ */
+export function formatPrice(price: number): string {
   return `$${Math.round(price).toLocaleString('es-AR')}`;
 }
 
@@ -45,10 +47,17 @@ export function adaptBackendProduct(backendProduct: BackendProduct): FrontendPro
     ? backendProduct.imageUrl
     : defaultImage;
 
-  // 💰 PRECIO LIMPIO
-  // Con el cambio de Andre, el precio ya viene como 56000 o 83000.
-  // Solo nos aseguramos de que sea un número.
-  const realPrice = Number(backendProduct.price || 0);
+  // 💰 LÓGICA SENIOR DE NORMALIZACIÓN DE PRECIOS
+  let rawPrice = Number(backendProduct.price || 0);
+
+  /**
+   * 🛡️ RED DE SEGURIDAD (Sanitización):
+   * Si el precio es menor a 1000 (ej: 75 o 56), asumimos que es un error de carga
+   * y que el usuario olvidó los tres ceros. Magnolia no tiene productos de $75.
+   */
+  if (rawPrice > 0 && rawPrice < 1000) {
+    rawPrice = rawPrice * 1000;
+  }
 
   const productTypeName = typeof backendProduct.productType === 'string'
     ? backendProduct.productType
@@ -65,8 +74,8 @@ export function adaptBackendProduct(backendProduct: BackendProduct): FrontendPro
   return {
     id: String(backendProduct.id), 
     name: backendProduct.name,
-    price: realPrice, 
-    formattedPrice: formatPrice(realPrice), 
+    price: rawPrice, 
+    formattedPrice: formatPrice(rawPrice), // Siempre usamos la función centralizada
     image: image,
     rating: 5,
     description: backendProduct.description || "",

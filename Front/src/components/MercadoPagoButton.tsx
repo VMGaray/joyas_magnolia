@@ -5,20 +5,25 @@ import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 import { useState } from "react";
 
-// Definimos que el componente recibe "shippingData" como propiedad
-export default function MercadoPagoButton({ shippingData }: { shippingData: any }) {
-  const { items } = useCart();
+// Recibe shippingData y el amount final ya calculado con descuentos
+export default function MercadoPagoButton({ 
+  shippingData, 
+  amount 
+}: { 
+  shippingData: any; 
+  amount: number; 
+}) {
+  const { items, totalPrice } = useCart();
   const { token, user } = useAuth();
   const [loading, setLoading] = useState(false);
 
   const handlePay = async () => {
-    // 1. Verificación de sesión
+    // 1. Verificaciones básicas
     if (!token) {
       alert("Debes iniciar sesión para realizar el pago.");
       return;
     }
 
-    // 2. Verificación de que completó el formulario de envío
     if (!shippingData.address || !shippingData.email || !shippingData.name) {
       alert("Por favor, completa todos los datos de envío antes de pagar.");
       return;
@@ -27,24 +32,28 @@ export default function MercadoPagoButton({ shippingData }: { shippingData: any 
     setLoading(true);
 
     try {
-      // 3. Mapeo de productos con PRECIO REAL
+      /**
+       * 🛡️ LÓGICA SENIOR: MANEJO DE DESCUENTOS EN MERCADO PAGO
+       * Calculamos el factor de descuento (ej: 0.90 para un 10% OFF)
+       * para aplicarlo a cada producto individualmente.
+       */
+      const discountFactor = amount / totalPrice;
+
       const productsToPay = items.map((item) => ({
         id: String(item.id),
         title: item.name,
         quantity: item.quantity || 1,
-        // Usamos la lógica de Magnolia: el precio base * 1000
-        unit_price: Math.round(Number(item.price) * 1000), 
+        // Aplicamos el factor de descuento al precio unitario real
+        unit_price: Math.round(Number(item.price) * discountFactor), 
         currency_id: "ARS",
       }));
 
-      // 4. Construcción del cuerpo para el Backend
       const paymentBody = {
         userId: user?.id,
         items: productsToPay,
-        shippingAddress: shippingData, // Aquí viaja el formulario de envío 📦
+        shippingAddress: shippingData,
       };
 
-      // 5. Petición al endpoint del Swagger
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/mercado-pago/create-preference`, {
         method: "POST",
         headers: {
@@ -60,8 +69,6 @@ export default function MercadoPagoButton({ shippingData }: { shippingData: any 
       }
 
       const data = await res.json();
-
-      // 6. Redirección a Mercado Pago
       const redirectUrl = data.init_point || data.sandbox_init_point;
 
       if (redirectUrl) {
@@ -82,16 +89,16 @@ export default function MercadoPagoButton({ shippingData }: { shippingData: any 
     <button
       onClick={handlePay}
       disabled={loading || items.length === 0}
-      className={`w-full py-4 rounded-sm font-bold text-sm uppercase tracking-widest transition-all shadow-md flex items-center justify-center gap-2 ${
-        loading ? "bg-gray-400 cursor-not-allowed" : "bg-[#009EE3] text-white hover:bg-[#0087C3]"
+      className={`w-full py-4 rounded-sm font-bold text-xs uppercase tracking-[0.2em] transition-all shadow-xl flex items-center justify-center gap-2 ${
+        loading ? "bg-gray-400 cursor-not-allowed" : "bg-[#009EE3] text-white hover:bg-[#0087C3] active:scale-[0.98]"
       }`}
     >
       {loading ? (
         <Loader2 size={18} className="animate-spin" />
       ) : (
-        <Lock size={16} />
+        <Lock size={14} />
       )}
-      {loading ? "Generando pago seguro..." : "Pagar con Mercado Pago"}
+      {loading ? "Procesando..." : "Finalizar y Pagar"}
     </button>
   );
 }
