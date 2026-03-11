@@ -94,9 +94,9 @@ export default function CartSidebar() {
                         </button>
                       </div>
 
-                      {/* Precio Total del Item CORREGIDO (* 1000) */}
+                      {/* ✅ Precio Total del Item LIMPIO (Sin * 1000) */}
                       <span className="font-medium text-magnolia-dark text-sm">
-                        ${(item.price * item.quantity * 1000).toLocaleString("es-AR", {
+                        ${(item.price * item.quantity).toLocaleString("es-AR", {
                           minimumFractionDigits: 0,
                           maximumFractionDigits: 0
                         })}
@@ -114,9 +114,9 @@ export default function CartSidebar() {
               
               <div className="flex justify-between items-center mb-6">
                 <span className="font-sans text-gray-600">Subtotal</span>
-                {/* PRECIO TOTAL CORREGIDO (* 1000) */}
+                {/* ✅ PRECIO TOTAL LIMPIO (Sin * 1000) */}
                 <span className="font-serif text-xl font-bold text-magnolia-dark">
-                  ${(totalPrice * 1000).toLocaleString("es-AR", {
+                  ${totalPrice.toLocaleString("es-AR", {
                     minimumFractionDigits: 0,
                     maximumFractionDigits: 0
                   })}

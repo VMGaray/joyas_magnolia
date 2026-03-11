@@ -65,7 +65,7 @@ export default function CheckoutPage() {
             <h2 className="font-serif text-2xl text-magnolia-dark mb-6">Resumen del Pedido</h2>
             <div className="space-y-4 mb-6 max-h-[300px] overflow-y-auto pr-2">
               {items.map((item) => (
-                <div key={item.id} className="flex gap-4 items-center border-b border-gray-50 pb-4 last:border-0">
+                <div key={item.id} className="flex gap-4 items-center border-b border-gray-100 pb-4 last:border-0">
                   <div className="relative w-16 h-16 bg-gray-50 rounded-sm overflow-hidden">
                     <Image src={item.image || "/placeholder.jpg"} alt={item.name} fill className="object-cover" />
                   </div>
@@ -74,7 +74,8 @@ export default function CheckoutPage() {
                     <p className="text-[10px] text-gray-400">Cantidad: {item.quantity}</p>
                   </div>
                   <span className="font-bold text-magnolia-dark text-sm">
-                    ${(Math.round(Number(item.price) * 1000) * item.quantity).toLocaleString("es-AR")}
+                    {/* ✅ ELIMINADA MULTIPLICACIÓN POR 1000 */}
+                    ${(Number(item.price) * item.quantity).toLocaleString("es-AR")}
                   </span>
                 </div>
               ))}
@@ -83,11 +84,11 @@ export default function CheckoutPage() {
             <div className="border-t border-gray-200 pt-4 space-y-2 mb-8">
               <div className="flex justify-between text-xl font-serif text-magnolia-dark font-black pt-4">
                 <span>Total</span>
-                <span>${(totalPrice * 1000).toLocaleString("es-AR")}</span>
+                {/* ✅ ELIMINADA MULTIPLICACIÓN POR 1000 */}
+                <span>${totalPrice.toLocaleString("es-AR")}</span>
               </div>
             </div>
 
-            {/* ✅ Componente del Botón con la data de envío */}
             <MercadoPagoButton shippingData={formData} />
           </div>
         </div>

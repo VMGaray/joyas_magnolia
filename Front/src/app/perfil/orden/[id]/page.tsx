@@ -1,41 +1,12 @@
-'use client';
+"use client";
 
 import { useOrder } from "@/lib/hooks";
 import { useRouter, useParams } from "next/navigation";
-import { ArrowLeft, Loader2, AlertCircle, Package, Truck, Calendar, DollarSign, ShoppingBag } from "lucide-react";
+import { ArrowLeft, Loader2, Package, Truck, Calendar, DollarSign, ShoppingBag } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
-interface OrderItem {
-  id: string;
-  productId: number;
-  product?: {
-    id: number;
-    name: string;
-    imageUrl?: string;
-  };
-  quantity: number;
-  price: number;
-}
-
-interface Order {
-  id: string;
-  userId: string;
-  status: "PENDING" | "PROCESSED" | "SHIPPED" | "CANCELLED" | "COMPLETED";
-  totalPrice: number;
-  createdAt: string;
-  updatedAt?: string;
-  items?: OrderItem[];
-  shippingAddress?: {
-    name?: string;
-    email?: string;
-    address?: string;
-    city?: string;
-    postalCode?: string;
-    phone?: string;
-  };
-}
-
+// --- CONSTANTES DE CONFIGURACIÓN (Deben estar aquí arriba) ---
 const statusLabels: Record<string, string> = {
   PENDING: "Pendiente",
   PROCESSED: "Procesado",
@@ -76,7 +47,6 @@ export default function OrderDetailPage() {
     );
   }
 
-  // CAMBIO AQUÍ: Si hay error o no hay orden, mostramos un mensaje amigable
   if (isError || !order) {
     return (
       <div className="bg-white rounded-lg p-12 flex flex-col items-center justify-center text-center shadow-sm border border-gray-100">
@@ -85,18 +55,16 @@ export default function OrderDetailPage() {
         </div>
         <h3 className="text-xl font-serif text-magnolia-dark mb-2">Aún no tenés compras</h3>
         <p className="text-gray-500 mb-6 max-w-xs">
-          Cuando realices tu primer pedido, aparecerá aquí para que puedas seguir su estado.
+          Cuando realices tu primer pedido, aparecerá aquí.
         </p>
-        <Link 
-          href="/" 
-          className="bg-magnolia-dark text-white px-8 py-3 rounded-sm uppercase tracking-widest text-xs hover:bg-magnolia-lilac transition-colors"
-        >
+        <Link href="/" className="bg-magnolia-dark text-white px-8 py-3 rounded-sm uppercase tracking-widest text-xs hover:bg-magnolia-lilac transition-colors">
           Ir a la tienda
         </Link>
       </div>
     );
   }
 
+  // ✅ Ahora estas constantes existen y TypeScript no dará error
   const status = order.status as keyof typeof statusLabels;
   const statusColor = statusColors[status] || statusColors.PENDING;
 
@@ -122,39 +90,17 @@ export default function OrderDetailPage() {
               <p className="text-xs mt-1">{statusDescriptions[status]}</p>
             </div>
           </div>
-
+          
           <div className="flex gap-4 mt-6 pt-6 border-t border-gray-100">
             <div className="flex items-center gap-2">
               <Calendar size={16} className="text-gray-400" />
               <div className="text-sm">
                 <p className="text-gray-500">Fecha de orden</p>
                 <p className="font-medium text-gray-800">
-                  {new Date(order.createdAt).toLocaleDateString("es-AR", {
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
+                  {new Date(order.createdAt).toLocaleDateString("es-AR")}
                 </p>
               </div>
             </div>
-
-            {order.updatedAt && (
-              <div className="flex items-center gap-2">
-                <Truck size={16} className="text-gray-400" />
-                <div className="text-sm">
-                  <p className="text-gray-500">Última actualización</p>
-                  <p className="font-medium text-gray-800">
-                    {new Date(order.updatedAt).toLocaleDateString("es-AR", {
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
-                    })}
-                  </p>
-                </div>
-              </div>
-            )}
           </div>
         </div>
 
@@ -166,51 +112,33 @@ export default function OrderDetailPage() {
                 Productos
               </h2>
 
-              {order.items && order.items.length > 0 ? (
-                <div className="space-y-4">
-                  {order.items.map((item: OrderItem, idx: number) => (
-                    <div
-                      key={item.id || idx}
-                      className="flex gap-4 pb-4 border-b border-gray-100 last:border-0"
-                    >
-                      {item.product?.imageUrl ? (
-                        <div className="relative w-20 h-20 bg-gray-100 rounded-sm flex-shrink-0 overflow-hidden">
-                          <Image
-                            src={item.product.imageUrl}
-                            alt={item.product.name}
-                            fill
-                            className="object-cover"
-                          />
-                        </div>
-                      ) : (
-                        <div className="w-20 h-20 bg-gray-100 rounded-sm flex-shrink-0 flex items-center justify-center">
-                          <Package size={24} className="text-gray-300" />
-                        </div>
-                      )}
-
-                      <div className="flex-1">
-                        <h3 className="font-serif text-gray-800 mb-1">
-                          {item.product?.name || "Producto sin nombre"}
-                        </h3>
-                        <p className="text-sm text-gray-500">Cantidad: {item.quantity}</p>
-                        <p className="text-sm text-gray-500">
-                          {/* PRECIO UNITARIO CORREGIDO (* 1000) */}
-                          Precio unitario: ${(Number(item.price) * 1000).toLocaleString("es-AR")}
-                        </p>
-                      </div>
-
-                      <div className="text-right">
-                        <p className="font-semibold text-gray-800">
-                          {/* SUBTOTAL POR PRODUCTO CORREGIDO (* 1000) */}
-                          ${(Number(item.price) * item.quantity * 1000).toLocaleString("es-AR")}
-                        </p>
-                      </div>
+              <div className="space-y-4">
+                {order.items?.map((item: any, idx: number) => (
+                  <div key={item.id || idx} className="flex gap-4 pb-4 border-b border-gray-100 last:border-0">
+                    <div className="relative w-20 h-20 bg-gray-100 rounded-sm overflow-hidden flex-shrink-0">
+                      <Image
+                        src={item.product?.imageUrl || "/placeholder.jpg"}
+                        alt={item.product?.name || "Producto"}
+                        fill
+                        className="object-cover"
+                      />
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-gray-500 text-sm">No hay productos en esta orden</p>
-              )}
+                    <div className="flex-1">
+                      <h3 className="font-serif text-gray-800 mb-1">{item.product?.name}</h3>
+                      <p className="text-sm text-gray-500">Cantidad: {item.quantity}</p>
+                      <p className="text-sm text-gray-500">
+                        {/* ✅ PRECIO LIMPIO SIN MULTIPLICAR */}
+                        Precio unitario: ${Number(item.price).toLocaleString("es-AR")}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-semibold text-gray-800">
+                        ${(Number(item.price) * item.quantity).toLocaleString("es-AR")}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
 
@@ -220,77 +148,16 @@ export default function OrderDetailPage() {
                 <DollarSign size={20} />
                 Resumen
               </h2>
-
-              <div className="space-y-3">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Subtotal</span>
-                  <span className="text-gray-800">
-                    {/* SUBTOTAL GENERAL CORREGIDO (* 1000) */}
-                    ${(Number(order.totalPrice) * 1000).toLocaleString("es-AR")}
+              <div className="space-y-3 pt-3 border-t border-gray-100">
+                <div className="flex justify-between">
+                  <span className="font-semibold text-gray-800">Total</span>
+                  <span className="font-bold text-lg text-magnolia-dark">
+                    {/* ✅ TOTAL LIMPIO SIN MULTIPLICAR */}
+                    ${Number(order.totalPrice).toLocaleString("es-AR")}
                   </span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Envío</span>
-                  <span className="text-green-600 font-medium">Gratis</span>
-                </div>
-                <div className="pt-3 border-t border-gray-100">
-                  <div className="flex justify-between">
-                    <span className="font-semibold text-gray-800">Total</span>
-                    <span className="font-bold text-lg text-magnolia-dark">
-                      {/* TOTAL GENERAL CORREGIDO (* 1000) */}
-                      ${(Number(order.totalPrice) * 1000).toLocaleString("es-AR")}
-                    </span>
-                  </div>
                 </div>
               </div>
             </div>
-
-            {order.shippingAddress && (
-              <div className="bg-white rounded-lg shadow-sm p-6">
-                <h2 className="font-semibold text-lg text-gray-800 mb-4 flex items-center gap-2">
-                  <Truck size={20} />
-                  Envío
-                </h2>
-                <div className="space-y-2 text-sm">
-                  {order.shippingAddress.name && (
-                    <div>
-                      <p className="text-gray-500">Nombre</p>
-                      <p className="font-medium text-gray-800">{order.shippingAddress.name}</p>
-                    </div>
-                  )}
-                  {order.shippingAddress.email && (
-                    <div>
-                      <p className="text-gray-500">Email</p>
-                      <p className="font-medium text-gray-800">{order.shippingAddress.email}</p>
-                    </div>
-                  )}
-                  {order.shippingAddress.address && (
-                    <div>
-                      <p className="text-gray-500">Dirección</p>
-                      <p className="font-medium text-gray-800">{order.shippingAddress.address}</p>
-                    </div>
-                  )}
-                  {order.shippingAddress.city && (
-                    <div>
-                      <p className="text-gray-500">Ciudad</p>
-                      <p className="font-medium text-gray-800">{order.shippingAddress.city}</p>
-                    </div>
-                  )}
-                  {order.shippingAddress.postalCode && (
-                    <div>
-                      <p className="text-gray-500">Código Postal</p>
-                      <p className="font-medium text-gray-800">{order.shippingAddress.postalCode}</p>
-                    </div>
-                  )}
-                  {order.shippingAddress.phone && (
-                    <div>
-                      <p className="text-gray-500">Teléfono</p>
-                      <p className="font-medium text-gray-800">{order.shippingAddress.phone}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </div>

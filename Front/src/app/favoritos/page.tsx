@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useWishlist } from "../../context/WishlistContext";
-import { Heart, ShoppingBag } from "lucide-react";
+import { Heart } from "lucide-react";
 import AddToCartButton from "../../components/AddToCartButton";
 
 export default function FavoritesPage() {
@@ -28,9 +28,9 @@ export default function FavoritesPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-8">
             {wishlistItems.map((product) => (
-              <div key={product.id} className="group relative border border-gray-100 rounded-sm p-4">
+              <div key={product.id} className="group relative border border-gray-100 rounded-sm p-4 hover:shadow-md transition-shadow">
                 
-                {/* Botón para borrar de favoritos (X) */}
+                {/* Botón para borrar de favoritos */}
                 <button 
                   onClick={() => toggleWishlist(product)}
                   className="absolute top-2 right-2 z-10 text-gray-400 hover:text-red-500 p-2 bg-white rounded-full shadow-sm"
@@ -47,18 +47,15 @@ export default function FavoritesPage() {
                 <div className="text-center space-y-2">
                   <h3 className="font-serif text-gray-800 text-lg">{product.name}</h3>
                   
-                  {/* PRECIO CORREGIDO AQUÍ: Multiplicación por 1000 y formato AR */}
+                  {/* ✅ PRECIO LIMPIO: Eliminada la multiplicación manual */}
                   <p className="font-sans text-gray-800 font-medium">
-                    ${(Number(product.price) * 1000).toLocaleString("es-AR", {
+                    ${Number(product.price).toLocaleString("es-AR", {
                       minimumFractionDigits: 0,
                       maximumFractionDigits: 0
                     })}
                   </p>
                   
-                  {/* Botón Agregar al Carrito Directo */}
                   <div className="pt-2">
-                    {/* Pasamos el producto con el precio original, 
-                        el componente AddToCartButton debería manejar la lógica de suma internamente */}
                     <AddToCartButton product={product} />
                   </div>
                 </div>
