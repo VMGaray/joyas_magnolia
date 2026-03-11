@@ -70,7 +70,6 @@ export default function ProductForm({ initialValues, onSubmit, onCancel }: Produ
   const [subtypes, setSubtypes] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Opciones rápidas para que no tengas que escribir
   const commonTags = ["destacado", "promo", "nueva colección", "sale"];
 
   useEffect(() => {
@@ -147,6 +146,17 @@ export default function ProductForm({ initialValues, onSubmit, onCancel }: Produ
       }
 
       notifySuccess(isEditing ? "¡Pieza actualizada!" : "¡Nueva joya creada!");
+      
+      // ✅ RESEATEO DEL FORMULARIO TRAS ÉXITO (Solo si no estamos editando)
+      if (!isEditing) {
+        setFormData(defaultValues);
+        setPreview(null);
+        setFile(null);
+        // Reseteamos el selector de archivo nativo
+        const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+        if (fileInput) fileInput.value = "";
+      }
+
       onSubmit(savedProduct);
     } catch (err: any) {
       notifyError(err.message);
@@ -158,7 +168,6 @@ export default function ProductForm({ initialValues, onSubmit, onCancel }: Produ
   return (
     <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
       
-      {/* Nombre y Precio */}
       <div className="space-y-2">
         <label className="text-[10px] uppercase tracking-widest font-bold text-gray-400">Nombre de la Joya</label>
         <input type="text" value={formData.name} onChange={(e) => handleChange("name", e.target.value)} required className="w-full border border-gray-200 px-4 py-3 rounded-sm focus:border-magnolia-lilac outline-none" />
@@ -174,7 +183,6 @@ export default function ProductForm({ initialValues, onSubmit, onCancel }: Produ
         <textarea value={formData.description} onChange={(e) => handleChange("description", e.target.value)} rows={2} className="w-full border border-gray-200 px-4 py-3 rounded-sm focus:border-magnolia-lilac outline-none" />
       </div>
 
-      {/* Clasificación obligatoria */}
       <div className="space-y-2">
         <label className="text-[10px] uppercase tracking-widest font-bold text-gray-400">Metal (Categoría)</label>
         <select value={formData.category} onChange={(e) => handleChange("category", e.target.value)} required className="w-full border border-gray-200 px-4 py-3 rounded-sm focus:border-magnolia-lilac outline-none">
@@ -191,7 +199,6 @@ export default function ProductForm({ initialValues, onSubmit, onCancel }: Produ
         </select>
       </div>
 
-      {/* Subtipos dinámicos */}
       {subtypes.length > 0 && (
         <div className="space-y-2">
           <label className="text-[10px] uppercase tracking-widest font-bold text-gray-400">Subtipo Específico</label>
@@ -226,7 +233,6 @@ export default function ProductForm({ initialValues, onSubmit, onCancel }: Produ
         <input type="number" value={formData.stock} onChange={(e) => handleChange("stock", e.target.value)} required className="w-full border border-gray-200 px-4 py-3 rounded-sm focus:border-magnolia-lilac outline-none" />
       </div>
 
-      {/* Sección de Tags / Destacados */}
       <div className="md:col-span-2 space-y-4 p-5 bg-gray-50 rounded-2xl border border-gray-100 shadow-inner">
         <div className="flex items-center justify-between">
           <label className="text-[10px] uppercase font-black text-magnolia-dark flex items-center gap-2 tracking-[0.2em]">
@@ -267,7 +273,6 @@ export default function ProductForm({ initialValues, onSubmit, onCancel }: Produ
         </div>
       </div>
 
-      {/* Imagen */}
       <div className="md:col-span-2 pt-4 border-t border-gray-50 flex items-center gap-6">
         <div className="relative w-24 h-24 bg-gray-50 rounded-lg border border-dashed border-gray-200 flex items-center justify-center overflow-hidden">
           {preview ? <Image src={preview} alt="Preview" fill className="object-cover" /> : <span className="text-[8px] text-gray-400 uppercase">Sin imagen</span>}
@@ -275,7 +280,6 @@ export default function ProductForm({ initialValues, onSubmit, onCancel }: Produ
         <input type="file" accept="image/*" onChange={handleFileChange} className="text-[10px] text-gray-400" />
       </div>
 
-      {/* Botones */}
       <div className="md:col-span-2 flex justify-end gap-4 pt-6">
         {onCancel && <button type="button" onClick={onCancel} className="text-[10px] font-bold uppercase text-gray-400">Cancelar</button>}
         <button type="submit" disabled={loading} className="bg-magnolia-dark text-white px-10 py-3 text-[10px] font-bold uppercase tracking-widest hover:bg-magnolia-lilac transition-all">

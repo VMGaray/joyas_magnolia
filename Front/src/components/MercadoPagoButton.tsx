@@ -5,39 +5,46 @@ import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 import { useState } from "react";
 
-export default function MercadoPagoButton() {
+// Definimos que el componente recibe "shippingData" como propiedad
+export default function MercadoPagoButton({ shippingData }: { shippingData: any }) {
   const { items } = useCart();
   const { token, user } = useAuth();
   const [loading, setLoading] = useState(false);
 
   const handlePay = async () => {
-    // 1. Verificación de seguridad
+    // 1. Verificación de sesión
     if (!token) {
       alert("Debes iniciar sesión para realizar el pago.");
+      return;
+    }
+
+    // 2. Verificación de que completó el formulario de envío
+    if (!shippingData.address || !shippingData.email || !shippingData.name) {
+      alert("Por favor, completa todos los datos de envío antes de pagar.");
       return;
     }
 
     setLoading(true);
 
     try {
-      // 2. Mapeo de productos con PRECIO CORREGIDO (* 1000)
+      // 3. Mapeo de productos con PRECIO REAL
       const productsToPay = items.map((item) => ({
         id: String(item.id),
         title: item.name,
         quantity: item.quantity || 1,
-        // CORRECCIÓN: Multiplicamos por 1000 para pasar de 15.3 a 15300
+        // Usamos la lógica de Magnolia: el precio base * 1000
         unit_price: Math.round(Number(item.price) * 1000), 
         currency_id: "ARS",
       }));
 
-      // 3. Construcción del cuerpo de la petición
+      // 4. Construcción del cuerpo para el Backend
       const paymentBody = {
-        orderId: crypto.randomUUID(), 
         userId: user?.id,
         items: productsToPay,
+        shippingAddress: shippingData, // Aquí viaja el formulario de envío 📦
       };
 
-      // 4. Petición al backend usando la variable de entorno
+      // 5. Petición al endpoint del Swagger
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/mercado-pago/create-preference`, {
         method: "POST",
         headers: {
@@ -47,27 +54,25 @@ export default function MercadoPagoButton() {
         body: JSON.stringify(paymentBody),
       });
 
-      // 5. Manejo de respuesta
       if (!res.ok) {
         const errorData = await res.json();
-        throw new Error(errorData.message || "Error al crear la preferencia de pago");
+        throw new Error(errorData.message || "Error al crear la preferencia");
       }
 
       const data = await res.json();
 
-      // 6. Redirección al checkout de Mercado Pago
-      // Nota: Usamos init_point para producción o sandbox_init_point para pruebas
+      // 6. Redirección a Mercado Pago
       const redirectUrl = data.init_point || data.sandbox_init_point;
 
       if (redirectUrl) {
         window.location.href = redirectUrl;
       } else {
-        throw new Error("No se recibió el punto de inicio de pago");
+        throw new Error("No se pudo obtener la URL de pago");
       }
 
     } catch (err: any) {
-      console.error("Error en la pasarela de pago:", err);
-      alert(`Error: ${err.message}`);
+      console.error("Error en la pasarela:", err);
+      alert(`Hubo un problema: ${err.message}`);
     } finally {
       setLoading(false);
     }
@@ -86,7 +91,7 @@ export default function MercadoPagoButton() {
       ) : (
         <Lock size={16} />
       )}
-      {loading ? "Generando pago..." : "Pagar con Mercado Pago"}
+      {loading ? "Generando pago seguro..." : "Pagar con Mercado Pago"}
     </button>
   );
 }

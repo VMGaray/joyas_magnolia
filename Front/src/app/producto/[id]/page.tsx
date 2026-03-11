@@ -17,7 +17,19 @@ interface Product {
   imageUrl: string | null;
   category?: { id: number; name: string } | null;
   productType?: { id: number; name: string } | null;
-  material?: string; // Agregado para consistencia con el Admin
+  material?: string;
+}
+
+// 💰 Función de formateo de precios (igual que en el adaptador)
+function formatPrice(price: number): string {
+  const inputPrice = Number(price || 0);
+  // Si el precio es menor a 1000, probablemente faltan los ceros
+  const realPrice = inputPrice < 1000 ? inputPrice * 1000 : inputPrice;
+  
+  return `$${Math.round(realPrice).toLocaleString('es-AR', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+  })}`;
 }
 
 async function getProduct(id: string): Promise<Product | null> {
@@ -49,7 +61,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
     product.material || 
     "Joyas";
 
-  // Convertir a formato compatible con los botones y corregir el precio
+  // Convertir a formato compatible con los botones
   const formattedProduct = {
     id: product.id,
     name: product.name,
@@ -58,10 +70,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
     stock: product.stock,
     image: product.imageUrl || "/placeholder.jpg",
     imageUrl: product.imageUrl || "/placeholder.jpg",
-    // CORRECCIÓN DE PRECIO: Multiplicamos por 1000 y formateamos
-    formattedPrice: `$${(Number(product.price) * 1000).toLocaleString("es-AR", {
-      minimumFractionDigits: 0,
-    })}`,
+    formattedPrice: formatPrice(product.price), // ✅ Ahora usa la misma lógica del adaptador
     category: displayCategory,
     rating: 5,
   };

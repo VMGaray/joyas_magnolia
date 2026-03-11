@@ -14,24 +14,18 @@ export interface FrontendProduct {
   material: string; 
   images: string[];
   stock: number;
-  tags: string[]; // ✅ Nuevo campo de etiquetas
-  isFeatured: boolean; // ✅ Ahora depende de si existe el tag "destacado"
+  tags: string[];
+  isFeatured: boolean;
 }
 
 function toSlug(text: string): string {
-  return text
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/\s+/g, '-')
-    .replace(/[^\w-]+/g, '');
+  if (!text) return "";
+  return text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
 }
 
 function formatPrice(price: number): string {
-  return `$${price.toLocaleString('es-AR', { 
-    minimumFractionDigits: 0, 
-    maximumFractionDigits: 0 
-  })}`;
+  // ✅ Formatea con puntos de miles (ej: 56000 -> $56.000)
+  return `$${Math.round(price).toLocaleString('es-AR')}`;
 }
 
 function categoryToMaterial(categoryName: string): string {
@@ -51,8 +45,10 @@ export function adaptBackendProduct(backendProduct: BackendProduct): FrontendPro
     ? backendProduct.imageUrl
     : defaultImage;
 
-  const inputPrice = Number(backendProduct.price || 0);
-  const realPrice = inputPrice < 1000 ? inputPrice * 1000 : inputPrice;
+  // 💰 PRECIO LIMPIO
+  // Con el cambio de Andre, el precio ya viene como 56000 o 83000.
+  // Solo nos aseguramos de que sea un número.
+  const realPrice = Number(backendProduct.price || 0);
 
   const productTypeName = typeof backendProduct.productType === 'string'
     ? backendProduct.productType
@@ -62,14 +58,15 @@ export function adaptBackendProduct(backendProduct: BackendProduct): FrontendPro
     ? backendProduct.category
     : (backendProduct.category as any)?.name;
 
-  // ✅ Procesamos los tags del backend
-  const productTags = Array.isArray(backendProduct.tags) ? backendProduct.tags : [];
+  const productTags = Array.isArray((backendProduct as any).tags) 
+    ? (backendProduct as any).tags 
+    : [];
 
   return {
     id: String(backendProduct.id), 
     name: backendProduct.name,
-    price: realPrice,
-    formattedPrice: formatPrice(realPrice),
+    price: realPrice, 
+    formattedPrice: formatPrice(realPrice), 
     image: image,
     rating: 5,
     description: backendProduct.description || "",
@@ -78,15 +75,11 @@ export function adaptBackendProduct(backendProduct: BackendProduct): FrontendPro
     images: [image],
     stock: typeof backendProduct.stock === "number" ? backendProduct.stock : 0,
     tags: productTags,
-    // ✅ Es destacado si incluye la palabra exacta en minúsculas
-    isFeatured: productTags.includes("destacado"), 
+    isFeatured: productTags.includes("destacado") || productTags.includes("Destacado"), 
   };
 }
 
 export function adaptBackendProducts(backendProducts: BackendProduct[]): FrontendProduct[] {
-  if (!backendProducts || !Array.isArray(backendProducts)) {
-    console.error("🚨 Error en adaptador:", backendProducts);
-    return []; 
-  }
+  if (!backendProducts || !Array.isArray(backendProducts)) return []; 
   return backendProducts.map(adaptBackendProduct);
 }
