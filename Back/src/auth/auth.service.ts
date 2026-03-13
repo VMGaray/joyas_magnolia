@@ -4,7 +4,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, MoreThan } from 'typeorm';
+import { Repository, MoreThan, ILike } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { Auth } from './entities/auth.entity';
@@ -49,6 +49,8 @@ export class AuthService {
     });
     if (!userFound)
       throw new BadRequestException('Usuario o contraseña invalido');
+    if (userFound.blockedAt)
+      throw new BadRequestException('Usuario bloqueado');
 
     const passwordCompare = await bcrypt.compare(
       credentials.password,
@@ -72,6 +74,7 @@ export class AuthService {
     const user = await this.authRepository.findOne({ where: { id } });
 
     if (!user) throw new BadRequestException('Usuario no encontrado');
+    if (user.blockedAt) throw new BadRequestException('Usuario bloqueado');
 
     return {
       username: user.username,
@@ -85,6 +88,7 @@ export class AuthService {
     const user = await this.authRepository.findOne({ where: { id } });
 
     if (!user) throw new BadRequestException('Usuario no encontrado');
+    if (user.blockedAt) throw new BadRequestException('Usuario bloqueado');
 
     await this.authRepository.update(id, data);
 
@@ -106,6 +110,7 @@ export class AuthService {
     });
 
     if (!user) throw new BadRequestException('Usuario no encontrado');
+    if (user.blockedAt) throw new BadRequestException('Usuario bloqueado');
 
     if (data.password !== data.password2)
       throw new BadRequestException('Ambas constraseñas deben ser iguales');
@@ -123,6 +128,7 @@ export class AuthService {
     });
 
     if (!user) throw new BadRequestException('Usuario no encontrado');
+    if (user.blockedAt) throw new BadRequestException('Usuario bloqueado');
 
     await this.authRepository.delete(id);
 
@@ -135,6 +141,7 @@ export class AuthService {
     });
 
     if (!user) throw new NotFoundException('Usuario no encontrado');
+    if (user.blockedAt) throw new BadRequestException('Usuario bloqueado');
 
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     const expires = new Date();
@@ -160,6 +167,7 @@ export class AuthService {
     });
 
     if (!user) throw new BadRequestException('Código inválido o expirado');
+    if (user.blockedAt) throw new BadRequestException('Usuario bloqueado');
 
     return { message: 'Código verificado con éxito', valid: true };
   }
@@ -177,6 +185,7 @@ export class AuthService {
     });
 
     if (!user) throw new BadRequestException('Código inválido o expirado');
+    if (user.blockedAt) throw new BadRequestException('Usuario bloqueado');
 
     const hashPassword = await bcrypt.hash(data.password, 10);
 
@@ -187,5 +196,64 @@ export class AuthService {
     });
 
     return 'Contraseña restablecida con éxito';
+  }
+
+  async blockUser(id: string) {
+    const user = await this.authRepository.findOne({ where: { id } });
+    if (!user) throw new NotFoundException('Usuario no encontrado');
+    
+    await this.authRepository.update(id, { blockedAt: new Date() });
+    return 'Usuario bloqueado con éxito';
+  }
+
+  async unblockUser(id: string) {
+    const user = await this.authRepository.findOne({ where: { id } });
+    if (!user) throw new NotFoundException('Usuario no encontrado');
+    
+    await this.authRepository.update(id, { blockedAt: null });
+    return 'Usuario desbloqueado con éxito';
+  }
+
+  async getAllUsers(page: number, limit: number) {
+    const skip = (page - 1) * limit;
+    const [users, total] = await this.authRepository.findAndCount({
+      skip: skip,
+      take: limit,
+      order: {
+        createdAt: 'DESC',
+      },
+    });
+
+    return {
+      users: users.map((user) => {
+        const { password, resetPasswordCode, resetPasswordExpires, ...result } = user;
+        return result;
+      }),
+      total,
+      page,
+      limit,
+    };
+  }
+
+  async searchUsersByName(name: string, page: number, limit: number) {
+    const skip = (page - 1) * limit;
+    const [users, total] = await this.authRepository.findAndCount({
+      where: { username: ILike(`%${name}%`) },
+      skip: skip,
+      take: limit,
+      order: {
+        createdAt: 'DESC',
+      },
+    });
+
+    return {
+      users: users.map((user) => {
+        const { password, resetPasswordCode, resetPasswordExpires, ...result } = user;
+        return result;
+      }),
+      total,
+      page,
+      limit,
+    };
   }
 }

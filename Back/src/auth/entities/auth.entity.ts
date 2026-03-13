@@ -1,5 +1,5 @@
 import { ProductRating } from 'src/product-ratings/entities/product-rating.entity';
-import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, CreateDateColumn, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 import { Exclude } from 'class-transformer';
 import { Order } from '../../order/entities/order.entity';
 
@@ -38,4 +38,10 @@ export class Auth {
 
   @OneToMany(() => Order, (order) => order.user)
   orders: Order[];
+
+  @CreateDateColumn({ type: 'timestamp' })
+  createdAt: Date;
+
+  @Column({ type: 'timestamp', nullable: true })
+  blockedAt: Date | null;
 }
