@@ -7,16 +7,35 @@ import { MENU_ITEMS } from "@/data/menuData";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
 import { useAuth } from "@/context/AuthContext";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 export default function Navbar() {
   const { toggleCart, totalItems } = useCart();
   const { wishlistItems } = useWishlist();
   const hasFavorites = wishlistItems.length > 0;
   const pathname = usePathname();
+  const router = useRouter();
 
-  // ✅ Obtenemos el objeto user para chequear isAdmin
+  // ✅ Obtenemos el objeto user para chequear isAdmin y el estado de login
   const { isLoggedIn, user } = useAuth(); 
+
+  // --- LÓGICA DE PROTECCIÓN (Senior UX) ---
+  
+  const handleCartClick = () => {
+    if (!isLoggedIn) {
+      router.push("/login");
+    } else {
+      toggleCart();
+    }
+  };
+
+  const handleFavoritesClick = () => {
+    if (!isLoggedIn) {
+      router.push("/login");
+    } else {
+      router.push("/favoritos");
+    }
+  };
 
   return (
     <header className="w-full bg-white pt-6 pb-0 border-b border-gray-100 relative z-50">
@@ -71,23 +90,26 @@ export default function Navbar() {
             {/* ✅ Ocultamos Favoritos y Carrito si el usuario es ADMIN */}
             {!user?.isAdmin && (
               <>
-                {/* Favoritos */}
-                <Link href="/favoritos" className="text-gray-700 hover:text-red-400 transition-colors">
+                {/* Favoritos Protegido */}
+                <button 
+                  onClick={handleFavoritesClick}
+                  className="text-gray-700 hover:text-red-400 transition-colors"
+                >
                   <Heart 
                     size={24} 
                     strokeWidth={1.5} 
-                    fill={hasFavorites ? "#F87171" : "none"} 
-                    className={hasFavorites ? "text-red-400" : "text-gray-700"}
+                    fill={hasFavorites && isLoggedIn ? "#F87171" : "none"} 
+                    className={hasFavorites && isLoggedIn ? "text-red-400" : "text-gray-700"}
                   />
-                </Link>
+                </button>
 
-                {/* Carrito */}
+                {/* Carrito Protegido */}
                 <button 
-                  onClick={toggleCart} 
+                  onClick={handleCartClick} 
                   className="relative text-gray-700 hover:text-magnolia-lilac transition-colors"
                 >
                   <ShoppingCart size={24} strokeWidth={1.5} />
-                  {totalItems > 0 && (
+                  {totalItems > 0 && isLoggedIn && (
                     <span className="absolute -top-2 -right-2 bg-magnolia-lilac text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center">
                       {totalItems}
                     </span>
@@ -115,7 +137,7 @@ export default function Navbar() {
               </li>
             ))}
 
-            {/* ✅ LINK DE DESTACADOS (Solo visible si no estás en el panel de admin) */}
+            {/* ✅ LINK DE DESTACADOS */}
             <li className="py-4">
               <Link 
                 href="/#destacados" 
