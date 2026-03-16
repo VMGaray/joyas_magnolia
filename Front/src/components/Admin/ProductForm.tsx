@@ -52,7 +52,8 @@ export default function ProductForm({ initialValues, onSubmit, onCancel }: Produ
   const [formData, setFormData] = useState<FormData>({
     name: initialValues?.name || "",
     description: initialValues?.description || "",
-    price: initialValues?.price ? Number(initialValues.price) * 1000 : "",
+    // ✅ SENIOR: Tomamos el precio tal cual viene del Backend (sin * 1000)
+    price: initialValues?.price ? Number(initialValues.price) : "",
     stock: initialValues?.stock || "",
     category: initialValues?.category || "",
     productType: initialValues?.productType || "",
@@ -112,9 +113,10 @@ export default function ProductForm({ initialValues, onSubmit, onCancel }: Produ
     const token = localStorage.getItem("token");
 
     try {
+      // ✅ SENIOR: Mandamos el precio exactamente como se escribió (sin / 1000)
       const productData = {
         ...formData,
-        price: Number(formData.price) / 1000, 
+        price: Number(formData.price), 
         stock: Number(formData.stock),
         tags: formData.tags.split(",").map(t => t.trim().toLowerCase()).filter(t => t !== ""),
       };
@@ -147,12 +149,10 @@ export default function ProductForm({ initialValues, onSubmit, onCancel }: Produ
 
       notifySuccess(isEditing ? "¡Pieza actualizada!" : "¡Nueva joya creada!");
       
-      // ✅ RESEATEO DEL FORMULARIO TRAS ÉXITO (Solo si no estamos editando)
       if (!isEditing) {
         setFormData(defaultValues);
         setPreview(null);
         setFile(null);
-        // Reseteamos el selector de archivo nativo
         const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
         if (fileInput) fileInput.value = "";
       }
@@ -238,7 +238,7 @@ export default function ProductForm({ initialValues, onSubmit, onCancel }: Produ
           <label className="text-[10px] uppercase font-black text-magnolia-dark flex items-center gap-2 tracking-[0.2em]">
             <Tag size={12} /> Etiquetas y Promociones
           </label>
-          <span className="text-[9px] text-gray-400 italic font-serif">Marcá "destacado" para la Home</span>
+          <span className="text-[9px] text-gray-400 italic font-serif">Marcá {"destacado"} para la Home</span>
         </div>
 
         <div className="flex flex-wrap gap-2">

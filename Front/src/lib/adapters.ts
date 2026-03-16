@@ -47,17 +47,12 @@ export function adaptBackendProduct(backendProduct: BackendProduct): FrontendPro
     ? backendProduct.imageUrl
     : defaultImage;
 
-  // 💰 LÓGICA SENIOR DE NORMALIZACIÓN DE PRECIOS
-  let rawPrice = Number(backendProduct.price || 0);
-
   /**
-   * 🛡️ RED DE SEGURIDAD (Sanitización):
-   * Si el precio es menor a 1000 (ej: 75 o 56), asumimos que es un error de carga
-   * y que el usuario olvidó los tres ceros. Magnolia no tiene productos de $75.
+   * 💰 LÓGICA DE PRECIOS LIMPIA (Senior):
+   * El precio del backend es la única fuente de verdad.
+   * Sin parches ni multiplicaciones arbitrarias.
    */
-  if (rawPrice > 0 && rawPrice < 1000) {
-    rawPrice = rawPrice * 1000;
-  }
+  const rawPrice = Number(backendProduct.price || 0);
 
   const productTypeName = typeof backendProduct.productType === 'string'
     ? backendProduct.productType
@@ -75,7 +70,7 @@ export function adaptBackendProduct(backendProduct: BackendProduct): FrontendPro
     id: String(backendProduct.id), 
     name: backendProduct.name,
     price: rawPrice, 
-    formattedPrice: formatPrice(rawPrice), // Siempre usamos la función centralizada
+    formattedPrice: formatPrice(rawPrice),
     image: image,
     rating: 5,
     description: backendProduct.description || "",

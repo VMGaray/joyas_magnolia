@@ -1,10 +1,10 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from "react";
 import { useAuth } from "./AuthContext";
 
 type CartItem = {
-  id: string; // UUID
+  id: string;
   name: string;
   price: number;
   image: string;
@@ -15,7 +15,8 @@ type CartContextType = {
   items: CartItem[];
   addToCart: (product: any) => void;
   removeFromCart: (id: string) => void;
-  removeOne: (id: string) => void; // <--- NUEVA FUNCIÓN
+  removeOne: (id: string) => void;
+  clearCart: () => void; // ✅ Limpieza para el Success
   totalPrice: number;
   totalItems: number;
   isCartOpen: boolean;
@@ -26,28 +27,29 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const { isLoggedIn } = useAuth();
-  const [items, setItems] = useState<CartItem[]>([]);
+  
+  // ✅ Usamos una función de inicialización para evitar el error del useEffect
+  const [items, setItems] = useState<CartItem[]>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("magnolia-cart");
+      return saved ? JSON.parse(saved) : [];
+    }
+    return [];
+  });
+
   const [isCartOpen, setIsCartOpen] = useState(false);
 
+  // Sincronizar con LocalStorage y manejar sesión
   useEffect(() => {
-    // Solo cargar carrito si está logueado
     if (isLoggedIn) {
-      const savedCart = localStorage.getItem("magnolia-cart");
-      if (savedCart) {
-        setItems(JSON.parse(savedCart));
-      }
-    } else {
-      // Limpiar carrito si no está logueado
+      localStorage.setItem("magnolia-cart", JSON.stringify(items));
+    } else if (items.length > 0) {
+      // Si se cierra sesión, limpiamos
       setItems([]);
       localStorage.removeItem("magnolia-cart");
     }
-  }, [isLoggedIn]);
+  }, [items, isLoggedIn]);
 
-  useEffect(() => {
-    localStorage.setItem("magnolia-cart", JSON.stringify(items));
-  }, [items]);
-
-  // SUMAR (Si ya existe suma 1, sino lo crea)
   const addToCart = (product: any) => {
     setItems((prev) => {
       const existing = prev.find((item) => item.id === String(product.id));
@@ -61,31 +63,40 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setIsCartOpen(true);
   };
 
-  // RESTAR DE A UNO (Nuevo)
   const removeOne = (id: string) => {
     setItems((prev) => {
-      return prev.map((item) => {
-        if (item.id === id) {
-          return { ...item, quantity: item.quantity - 1 };
-        }
-        return item;
-      }).filter((item) => item.quantity > 0); // Si llega a 0, se borra solo
+      return prev.map((item) => 
+        item.id === id ? { ...item, quantity: item.quantity - 1 } : item
+      ).filter((item) => item.quantity > 0);
     });
   };
 
-  // ELIMINAR TODO EL ITEM (Tacho de basura)
   const removeFromCart = (id: string) => {
     setItems((prev) => prev.filter((item) => item.id !== id));
   };
 
+  // ✅ Limpieza total del carrito
+ const clearCart = useCallback(() => {
+  setItems([]);
+  localStorage.removeItem("magnolia-cart");
+}, []); // ✅ Esto hace que la función sea estable
+
   const toggleCart = () => setIsCartOpen(!isCartOpen);
 
-  const totalPrice = items.reduce((acc, item) => acc + item.price * item.quantity, 0);
-  const totalItems = items.reduce((acc, item) => acc + item.quantity, 0);
+  // ✅ Memorizamos los totales para mejorar performance
+  // src/context/CartContext.tsx
+
+const totalPrice = useMemo(() => {
+  return items.reduce((acc, item) => {
+    const itemPrice = Number(item.price) || 0;
+    return acc + (itemPrice * item.quantity);
+  }, 0);
+}, [items]);
+  const totalItems = useMemo(() => items.reduce((acc, item) => acc + item.quantity, 0), [items]);
 
   return (
     <CartContext.Provider
-      value={{ items, addToCart, removeFromCart, removeOne, totalPrice, totalItems, isCartOpen, toggleCart }}
+      value={{ items, addToCart, removeFromCart, removeOne, clearCart, totalPrice, totalItems, isCartOpen, toggleCart }}
     >
       {children}
     </CartContext.Provider>

@@ -4,13 +4,12 @@ import { useState } from "react";
 import { Lock, Loader2, Check, AlertTriangle } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
-// Usamos la URL de la API de forma dinámica
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
 export const SecuritySettings = () => {
   const { user, token } = useAuth();
-  const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
+  const [confirm, setConfirm] = useState(""); // Añadimos confirmación para password2
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -18,9 +17,14 @@ export const SecuritySettings = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validación básica
-    if (!current || !next) {
+    // Validación local
+    if (!next || !confirm) {
       setError("Por favor, completa ambos campos.");
+      return;
+    }
+
+    if (next !== confirm) {
+      setError("Las contraseñas no coinciden.");
       return;
     }
 
@@ -29,14 +33,17 @@ export const SecuritySettings = () => {
     setError(null);
 
     try {
-      // Usamos la variable API_URL
+      // ✅ AJUSTE SEGÚN SWAGGER: Enviamos password y password2
       const res = await fetch(`${API_URL}/auth/change-password/${user?.id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ currentPassword: current, newPassword: next }),
+        body: JSON.stringify({ 
+          password: next, 
+          password2: confirm 
+        }),
       });
 
       const text = await res.text();
@@ -48,15 +55,15 @@ export const SecuritySettings = () => {
       }
 
       if (!res.ok) {
+        // Manejo de errores de validación del servidor (mayúsculas, longitud, etc.)
         const serverError = Array.isArray(data.message) ? data.message.join(", ") : data.message;
-        throw new Error(serverError || "La contraseña actual es incorrecta.");
+        throw new Error(serverError || "No se pudo actualizar la contraseña.");
       }
 
       setMessage("Contraseña actualizada con éxito.");
-      setCurrent("");
       setNext("");
+      setConfirm("");
       
-      // Limpiar mensaje de éxito después de unos segundos
       setTimeout(() => setMessage(null), 4000);
 
     } catch (err: any) {
@@ -87,13 +94,13 @@ export const SecuritySettings = () => {
       <form onSubmit={handleSubmit} className="space-y-6 max-w-sm">
         <div>
           <label className="block text-xs uppercase tracking-widest text-gray-500 font-bold mb-2">
-            Contraseña Actual
+            Nueva Contraseña
           </label>
           <div className="relative">
             <input
               type="password"
-              value={current}
-              onChange={(e) => setCurrent(e.target.value)}
+              value={next}
+              onChange={(e) => setNext(e.target.value)}
               className="w-full border border-gray-300 pl-10 pr-3 py-3 rounded-sm focus:border-magnolia-dark focus:ring-0 outline-none text-sm transition-colors"
               placeholder="••••••••"
             />
@@ -103,13 +110,13 @@ export const SecuritySettings = () => {
 
         <div>
           <label className="block text-xs uppercase tracking-widest text-gray-500 font-bold mb-2">
-            Nueva Contraseña
+            Repetir Nueva Contraseña
           </label>
           <div className="relative">
             <input
               type="password"
-              value={next}
-              onChange={(e) => setNext(e.target.value)}
+              value={confirm}
+              onChange={(e) => setConfirm(e.target.value)}
               className="w-full border border-gray-300 pl-10 pr-3 py-3 rounded-sm focus:border-magnolia-dark focus:ring-0 outline-none text-sm transition-colors"
               placeholder="••••••••"
             />
