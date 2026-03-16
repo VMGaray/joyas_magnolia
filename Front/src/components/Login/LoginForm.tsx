@@ -41,48 +41,51 @@ export const LoginForm = () => {
       });
 
       const responseText = await response.text();
-      let token: string | null = null;
+      let data: any = {};
 
       try {
-        const data = JSON.parse(responseText);
-        token = data?.token || data?.access_token || null;
+        data = JSON.parse(responseText);
       } catch {
-        if (response.ok && responseText.length > 100) {
-          token = responseText;
-        } else {
-          token = null;
-        }
+        // Si no es JSON, manejamos el texto plano
+      }
+
+      // 🛡️ DETECCIÓN DE USUARIO BLOQUEADO (Senior UX)
+      // Chequeamos status 403 o si el mensaje del servidor menciona bloqueo
+      if (response.status === 403 || data.message?.toLowerCase().includes("block")) {
+        const msgBloqueo = "El usuario está bloqueado. Por favor, comunicarse con Magnoliajoyas7@gmail.com";
+        setError(msgBloqueo);
+        notifyError("Cuenta suspendida 🔒");
+        setLoading(false);
+        return;
+      }
+
+      let token: string | null = data?.token || data?.access_token || null;
+
+      if (!token && response.ok && responseText.length > 100) {
+        token = responseText;
       }
 
       if (!response.ok || !token) {
-        throw new Error("Credenciales inválidas");
+        throw new Error(data.message || "Credenciales inválidas");
       }
 
       const cleanToken = token.replace(/^"|"$/g, "");
       
-      // 1. Ejecutamos el login (esto guarda el token en localStorage)
       await login(cleanToken);
-
-      // 2. Pequeña espera para sincronización de localStorage
       await new Promise(resolve => setTimeout(resolve, 300));
 
       const storedUser = localStorage.getItem("user");
       const parsedUser = storedUser ? JSON.parse(storedUser) : null;
 
-      // 3. Mostramos el Modal de Bienvenida de Magnolia
       if (parsedUser?.isAdmin) {
         setWelcomeMessage("Ingreso exitoso ✨");
         setUserName(parsedUser.username || "Admin");
-
-        // ✅ REGLA DE ORO: Usamos window.location.replace para evitar el parpadeo
-        // Esto limpia el historial y fuerza al navegador a entrar al admin "limpio"
         setTimeout(() => {
           window.location.replace("/admin");
         }, 1500);
       } else {
         setWelcomeMessage("Ingreso exitoso 🛍️");
         setUserName(parsedUser.username || "Usuario");
-
         setTimeout(() => {
           window.location.replace("/");
         }, 1500);
@@ -98,21 +101,21 @@ export const LoginForm = () => {
   };
 
   return (
-    <div className="bg-white w-full max-w-md p-8 rounded-sm shadow-sm border border-gray-100">
+    <div className="bg-white w-full max-w-md p-8 rounded-sm shadow-sm border border-gray-100 font-sans">
       <div className="text-center mb-8">
         <h1 className="font-serif text-3xl text-magnolia-dark mb-2">Bienvenida</h1>
-        <p className="text-sm text-gray-500 font-sans">Ingresá a tu cuenta para ver tus pedidos</p>
+        <p className="text-sm text-gray-500">Ingresá a tu cuenta para ver tus pedidos</p>
       </div>
 
       {error && (
-        <div className="mb-4 p-3 bg-red-50 text-red-500 text-xs rounded-sm border border-red-100 text-center">
+        <div className="mb-4 p-3 bg-red-50 text-red-600 text-[11px] leading-relaxed rounded-sm border border-red-100 text-center font-bold">
           {error}
         </div>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
-          <label className="block text-xs uppercase tracking-wider text-gray-500 mb-2">Email</label>
+          <label className="block text-xs uppercase tracking-wider text-gray-500 mb-2 font-bold">Email</label>
           <div className="relative">
             <input 
               type="email" 
@@ -121,7 +124,7 @@ export const LoginForm = () => {
               onChange={handleChange}
               required
               placeholder="tu@email.com" 
-              className="w-full border border-gray-300 pl-10 pr-4 py-3 rounded-sm focus:outline-none focus:border-magnolia-lilac transition-colors"
+              className="w-full border border-gray-300 pl-10 pr-4 py-3 rounded-sm focus:outline-none focus:border-magnolia-lilac transition-colors text-sm"
             />
             <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
           </div>
@@ -129,11 +132,10 @@ export const LoginForm = () => {
 
         <div>
           <div className="flex justify-between items-center mb-2">
-            <label className="block text-xs uppercase tracking-wider text-gray-500">Contraseña</label>
-           {/* Cambiá el href="#" por la ruta real */}
-          <Link href="/recuperar-clave" className="text-xs text-magnolia-lilac hover:underline">
-  ¿Olvidaste tu clave?
-          </Link>
+            <label className="block text-xs uppercase tracking-wider text-gray-500 font-bold">Contraseña</label>
+            <Link href="/recuperar-clave" className="text-[10px] uppercase tracking-tighter text-magnolia-lilac hover:underline font-bold">
+              ¿Olvidaste tu clave?
+            </Link>
           </div>
           <div className="relative">
             <input 
@@ -143,7 +145,7 @@ export const LoginForm = () => {
               onChange={handleChange}
               required
               placeholder="••••••••" 
-              className="w-full border border-gray-300 pl-10 pr-4 py-3 rounded-sm focus:outline-none focus:border-magnolia-lilac transition-colors"
+              className="w-full border border-gray-300 pl-10 pr-4 py-3 rounded-sm focus:outline-none focus:border-magnolia-lilac transition-colors text-sm"
             />
             <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
           </div>
@@ -152,7 +154,7 @@ export const LoginForm = () => {
         <button 
           type="submit" 
           disabled={loading}
-          className="w-full bg-magnolia-dark text-white py-3 uppercase tracking-widest text-sm hover:bg-magnolia-lilac transition-colors font-bold flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full bg-magnolia-dark text-white py-4 uppercase tracking-[0.2em] text-xs hover:bg-magnolia-lilac transition-colors font-bold flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
         >
           {loading ? (
             <>
@@ -170,15 +172,15 @@ export const LoginForm = () => {
 
       <div className="my-8 flex items-center gap-4">
         <div className="h-px bg-gray-200 flex-1"></div>
-        <span className="text-xs text-gray-400 uppercase">O</span>
+        <span className="text-[10px] text-gray-400 uppercase font-bold">O</span>
         <div className="h-px bg-gray-200 flex-1"></div>
       </div>
 
       <div className="text-center">
-        <p className="text-sm text-gray-600 mb-4">¿Todavía no tenés cuenta?</p>
+        <p className="text-sm text-gray-600 mb-4 font-sans">¿Todavía no tenés cuenta?</p>
         <Link 
           href="/registro" 
-          className="block w-full border border-magnolia-dark text-magnolia-dark py-3 uppercase tracking-widest text-xs hover:bg-magnolia-dark hover:text-white transition-colors"
+          className="block w-full border border-magnolia-dark text-magnolia-dark py-3 uppercase tracking-widest text-[10px] font-bold hover:bg-magnolia-dark hover:text-white transition-colors"
         >
           Crear Cuenta
         </Link>
