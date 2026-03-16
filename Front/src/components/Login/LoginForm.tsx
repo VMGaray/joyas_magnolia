@@ -130,7 +130,10 @@ export const LoginForm = () => {
         <div>
           <div className="flex justify-between items-center mb-2">
             <label className="block text-xs uppercase tracking-wider text-gray-500">Contraseña</label>
-            <Link href="#" className="text-xs text-magnolia-lilac hover:underline">¿Olvidaste tu clave?</Link>
+           {/* Cambiá el href="#" por la ruta real */}
+          <Link href="/recuperar-clave" className="text-xs text-magnolia-lilac hover:underline">
+  ¿Olvidaste tu clave?
+          </Link>
           </div>
           <div className="relative">
             <input 
