@@ -28,11 +28,12 @@ export class MercadoPagoService {
     const accessToken = this.configService.get<string>('MP_ACCESS_TOKEN');
     this.client = new MercadoPagoConfig({
       accessToken: accessToken || '',
-      options: { timeout: 5000 },
+      options: { timeout: 10000 },
     });
   }
 
   async createPreference(createPreferenceDto: CreatePreferenceDto) {
+    const startTime = Date.now();
     const { orderId, userId } = createPreferenceDto;
 
     const order = await this.orderRepository.findOne({
@@ -58,6 +59,7 @@ export class MercadoPagoService {
     const preference = new Preference(this.client);
 
     try {
+      console.log(`[MercadoPago] Creating preference for Order ${orderId}...`);
       const response = await preference.create({
         body: {
           items: order.items.map((item) => ({
@@ -81,6 +83,9 @@ export class MercadoPagoService {
         },
       });
 
+      const duration = Date.now() - startTime;
+      console.log(`[MercadoPago] Preference created successfully in ${duration}ms. ID: ${response.id}`);
+
       // Guardar el pago inicial en la base de datos
       const newPayment = this.paymentRepository.create({
         amount: order.totalPrice,
@@ -97,6 +102,8 @@ export class MercadoPagoService {
         sandbox_init_point: response.sandbox_init_point,
       };
     } catch (error: any) {
+      const duration = Date.now() - startTime;
+      console.error(`[MercadoPago] Error creating preference after ${duration}ms:`, error.message);
       const errorMessage = error.message || 'Unknown error';
       const errorCause = error.cause || error;
       throw new BadRequestException({

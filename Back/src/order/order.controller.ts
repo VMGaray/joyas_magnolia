@@ -1,8 +1,9 @@
-import { Controller, Post, Body, Get, Param, Patch, UseGuards } from '@nestjs/common';
+import { Controller, Post, Body, Get, Param, Patch, Delete, UseGuards } from '@nestjs/common';
 import { OrderService } from './order.service';
 import { CreateOrderDto } from './dtos/create-order.dto';
 import { UpdateOrderStatusDto } from './dtos/update-order-status.dto';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { AddProductDto } from './dtos/add-product.dto';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
 import { Roles } from 'src/decorators/rol.decorator';
 import { Role } from 'src/auth/rol.enum';
 import { AuthGuard } from 'src/auth/guards/auth.guard';
@@ -60,5 +61,35 @@ export class OrderController {
     @Body() updateOrderStatusDto: UpdateOrderStatusDto,
   ) {
     return this.orderService.updateOrderStatus(id, updateOrderStatusDto.status);
+  }
+
+  @Patch(':id/add-product')
+  @ApiBearerAuth()
+  @Roles(Role.User)
+  @UseGuards(AuthGuard, RolesGuard)
+  @ApiOperation({ summary: 'Add a product to an existing pending order' })
+  @ApiResponse({ status: 200, description: 'Product added successfully' })
+  @ApiResponse({ status: 400, description: 'Order not pending or insufficient stock' })
+  @ApiResponse({ status: 404, description: 'Order or product not found' })
+  addProduct(
+    @Param('id') id: string,
+    @Body() addProductDto: AddProductDto,
+  ) {
+    return this.orderService.addProductToOrder(id, addProductDto.productId, addProductDto.quantity);
+  }
+
+  @Delete(':id/product/:productId')
+  @ApiBearerAuth()
+  @Roles(Role.User)
+  @UseGuards(AuthGuard, RolesGuard)
+  @ApiOperation({ summary: 'Remove a product from an existing pending order' })
+  @ApiResponse({ status: 200, description: 'Product removed successfully' })
+  @ApiResponse({ status: 400, description: 'Order not pending' })
+  @ApiResponse({ status: 404, description: 'Order or product not found in order' })
+  removeProduct(
+    @Param('id') id: string,
+    @Param('productId') productId: string,
+  ) {
+    return this.orderService.removeProductFromOrder(id, productId);
   }
 }
