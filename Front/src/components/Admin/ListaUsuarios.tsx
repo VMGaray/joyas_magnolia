@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { UserCircle, Loader2, AlertTriangle, ShieldOff, ShieldCheck, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { notifyError, notifySuccess } from "@/components/helpers/Toast";
 
@@ -13,10 +13,13 @@ export default function ListaUsuarios() {
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
-  const fetchUsuarios = async (nombre?: string, currentBatch = 1) => {
+  // ✅ Usamos useCallback para que la función sea estable y se pueda llamar desde cualquier lado
+  const fetchUsuarios = useCallback(async (nombre?: string, currentBatch = 1) => {
     setLoading(true);
     try {
       const token = localStorage.getItem("token");
+      
+      // Si hay nombre usamos /search, si no, la lista paginada normal
       const endpoint = nombre 
         ? `${API_URL}/auth/users/search?name=${nombre}&page=${currentBatch}&limit=10` 
         : `${API_URL}/auth/users?page=${currentBatch}&limit=10`;
@@ -34,18 +37,26 @@ export default function ListaUsuarios() {
         setUsuarios([]);
       }
     } catch (err) {
+      console.error("Error fetching users:", err);
       setUsuarios([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, [API_URL]);
 
+  // ✅ Efecto que reacciona al cambio de página
   useEffect(() => {
     fetchUsuarios(busqueda, page);
-  }, [page]);
+  }, [page, fetchUsuarios]);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    setPage(1); // Reiniciamos a la página 1 al buscar
+    fetchUsuarios(busqueda, 1);
+  };
 
   const handleToggleBlock = async (user: any) => {
-    // ✅ CLAVE: Si 'blockedAt' no es null, el usuario está bloqueado
+    // 🛡️ Determinamos el estado basado en blockedAt (como vimos en tu DB)
     const estaBloqueado = user.blockedAt !== null && user.blockedAt !== undefined;
     const action = estaBloqueado ? 'unblock' : 'block';
     
@@ -60,10 +71,10 @@ export default function ListaUsuarios() {
       
       notifySuccess(`Usuario ${estaBloqueado ? 'desbloqueado' : 'bloqueado'} con éxito`);
       
-      // Forzamos una pequeña espera para que la DB se actualice antes del GET
-      setTimeout(() => fetchUsuarios(busqueda, page), 300);
+      // ✅ IMPORTANTE: Refrescamos los datos inmediatamente para ver el cambio
+      await fetchUsuarios(busqueda, page);
     } catch (error) {
-      notifyError("No se pudo realizar la acción");
+      notifyError("No se pudo realizar la acción. Verificá los permisos del servidor.");
     }
   };
 
@@ -74,7 +85,7 @@ export default function ListaUsuarios() {
   return (
     <div className="space-y-6 font-sans">
       {/* BUSCADOR */}
-      <div className="flex gap-2 max-w-md bg-white p-2 rounded-xl border border-gray-100 shadow-sm">
+      <form onSubmit={handleSearch} className="flex gap-2 max-w-md bg-white p-2 rounded-xl border border-gray-100 shadow-sm">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
           <input 
@@ -83,11 +94,12 @@ export default function ListaUsuarios() {
             className="w-full pl-10 pr-4 py-2 outline-none text-sm"
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && fetchUsuarios(busqueda, 1)}
           />
         </div>
-        <button onClick={() => { setPage(1); fetchUsuarios(busqueda, 1); }} className="bg-magnolia-dark text-white px-4 py-2 rounded-lg text-xs font-bold uppercase hover:bg-magnolia-lilac transition-colors">Buscar</button>
-      </div>
+        <button type="submit" className="bg-magnolia-dark text-white px-4 py-2 rounded-lg text-xs font-bold uppercase hover:bg-magnolia-lilac transition-colors">
+          Buscar
+        </button>
+      </form>
 
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
         <table className="w-full text-left">
@@ -99,8 +111,11 @@ export default function ListaUsuarios() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50">
-            {usuarios.map((u) => {
-              // ✅ DETECCIÓN DE ESTADO REAL BASADA EN blockedAt
+            {usuarios.length === 0 ? (
+               <tr>
+                 <td colSpan={3} className="py-20 text-center text-gray-400 text-sm italic">No se encontraron usuarios</td>
+               </tr>
+            ) : usuarios.map((u) => {
               const isBlocked = u.blockedAt !== null && u.blockedAt !== undefined;
               
               return (
@@ -124,7 +139,7 @@ export default function ListaUsuarios() {
                     </span>
                   </td>
                   <td className="px-6 py-4 text-right">
-                    {u.role !== 'ADMIN' && (
+                    {(u.role !== 'ADMIN' && !u.isAdmin) && (
                       <button 
                         onClick={() => handleToggleBlock(u)}
                         className={`inline-flex items-center gap-2 text-[10px] font-bold uppercase py-2 px-3 rounded-lg transition-all ${
@@ -143,9 +158,25 @@ export default function ListaUsuarios() {
 
         {/* PAGINACIÓN */}
         <div className="p-4 bg-gray-50/50 border-t border-gray-100 flex justify-between items-center">
-          <button disabled={page === 1} onClick={() => setPage(p => p - 1)} className="text-[10px] font-bold uppercase text-gray-400 hover:text-magnolia-dark disabled:opacity-30">Anterior</button>
-          <span className="text-[11px] text-gray-400 uppercase">Página {page} de {totalPages}</span>
-          <button disabled={page >= totalPages} onClick={() => setPage(p => p + 1)} className="text-[10px] font-bold uppercase text-gray-400 hover:text-magnolia-dark disabled:opacity-30">Siguiente</button>
+          <button 
+            disabled={page === 1 || loading} 
+            onClick={() => setPage(p => p - 1)} 
+            className="text-[10px] font-bold uppercase text-gray-400 hover:text-magnolia-dark disabled:opacity-30 transition-colors"
+          >
+            Anterior
+          </button>
+          
+          <span className="text-[11px] text-gray-400 uppercase font-medium">
+            Página {page} de {totalPages}
+          </span>
+          
+          <button 
+            disabled={page >= totalPages || loading} 
+            onClick={() => setPage(p => p + 1)} 
+            className="text-[10px] font-bold uppercase text-gray-400 hover:text-magnolia-dark disabled:opacity-30 transition-colors"
+          >
+            Siguiente
+          </button>
         </div>
       </div>
     </div>

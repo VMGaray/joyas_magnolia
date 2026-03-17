@@ -16,7 +16,7 @@ type CartContextType = {
   addToCart: (product: any) => void;
   removeFromCart: (id: string) => void;
   removeOne: (id: string) => void;
-  clearCart: () => void; // ✅ Limpieza para el Success
+  clearCart: () => void;
   totalPrice: number;
   totalItems: number;
   isCartOpen: boolean;
@@ -26,29 +26,31 @@ type CartContextType = {
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
-  const { isLoggedIn } = useAuth();
+  const { user } = useAuth();
   
-  // ✅ Usamos una función de inicialización para evitar el error del useEffect
-  const [items, setItems] = useState<CartItem[]>(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("magnolia-cart");
-      return saved ? JSON.parse(saved) : [];
-    }
-    return [];
-  });
+  // ✅ Usamos una clave dinámica basada en el usuario (si existe) o una genérica
+  const cartKey = user ? `magnolia-cart-${user.id}` : "magnolia-cart-guest";
 
-  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [items, setItems] = useState<CartItem[]>([]);
 
-  // Sincronizar con LocalStorage y manejar sesión
+  // 1. Cargar del LocalStorage al montar el componente o cambiar de usuario
   useEffect(() => {
-    if (isLoggedIn) {
-      localStorage.setItem("magnolia-cart", JSON.stringify(items));
-    } else if (items.length > 0) {
-      // Si se cierra sesión, limpiamos
+    const saved = localStorage.getItem(cartKey);
+    if (saved) {
+      setItems(JSON.parse(saved));
+    } else {
       setItems([]);
-      localStorage.removeItem("magnolia-cart");
     }
-  }, [items, isLoggedIn]);
+  }, [cartKey]);
+
+  // 2. Guardar en LocalStorage cada vez que cambian los items
+  useEffect(() => {
+    if (items.length > 0) {
+      localStorage.setItem(cartKey, JSON.stringify(items));
+    } else {
+      localStorage.removeItem(cartKey);
+    }
+  }, [items, cartKey]);
 
   const addToCart = (product: any) => {
     setItems((prev) => {
@@ -75,23 +77,21 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setItems((prev) => prev.filter((item) => item.id !== id));
   };
 
-  // ✅ Limpieza total del carrito
- const clearCart = useCallback(() => {
-  setItems([]);
-  localStorage.removeItem("magnolia-cart");
-}, []); // ✅ Esto hace que la función sea estable
+  const clearCart = useCallback(() => {
+    setItems([]);
+    localStorage.removeItem(cartKey);
+  }, [cartKey]);
 
+  const [isCartOpen, setIsCartOpen] = useState(false);
   const toggleCart = () => setIsCartOpen(!isCartOpen);
 
-  // ✅ Memorizamos los totales para mejorar performance
-  // src/context/CartContext.tsx
+  const totalPrice = useMemo(() => {
+    return items.reduce((acc, item) => {
+      const itemPrice = Number(item.price) || 0;
+      return acc + (itemPrice * item.quantity);
+    }, 0);
+  }, [items]);
 
-const totalPrice = useMemo(() => {
-  return items.reduce((acc, item) => {
-    const itemPrice = Number(item.price) || 0;
-    return acc + (itemPrice * item.quantity);
-  }, 0);
-}, [items]);
   const totalItems = useMemo(() => items.reduce((acc, item) => acc + item.quantity, 0), [items]);
 
   return (
