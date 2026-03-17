@@ -16,7 +16,7 @@ interface AuthContextType {
   isLoggedIn: boolean;
   token: string | null;
   user: User | null;
-  loading: boolean; // ✅ Nuevo: Estado para evitar el parpadeo
+  loading: boolean;
   login: (token: string) => Promise<void>;
   logout: () => void;
   checkLogin: () => void;
@@ -26,7 +26,7 @@ const AuthContext = createContext<AuthContextType>({
   isLoggedIn: false,
   token: null,
   user: null,
-  loading: true, // Empezamos cargando
+  loading: true,
   login: async () => {},
   logout: () => {},
   checkLogin: () => {},
@@ -38,7 +38,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [token, setToken] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true); // ✅ Nuevo: Control de parpadeo
+  const [loading, setLoading] = useState(true);
 
   const decodeToken = (token: string): User | null => {
     try {
@@ -71,7 +71,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       localStorage.setItem("user", JSON.stringify(userData));
       return userData;
     } catch (error) {
-      console.error("Error al traer perfil:", error);
       const fallbackUser = { id, email: "", isAdmin, username: "" };
       setUser(fallbackUser);
       localStorage.setItem("user", JSON.stringify(fallbackUser));
@@ -96,7 +95,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     } catch (err) {
       console.error("Error en checkLogin:", err);
     } finally {
-      setLoading(false); // ✅ Finaliza la carga inicial
+      setLoading(false);
     }
   };
 
@@ -105,7 +104,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   const login = async (token: string) => {
-    setLoading(true); // Bloqueamos acciones mientras logueamos
+    setLoading(true);
     const decodedUser = decodeToken(token);
 
     localStorage.setItem("token", token);
@@ -118,10 +117,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setUser(decodedUser);
       localStorage.setItem("user", JSON.stringify(decodedUser));
     }
-    setLoading(false); // Liberamos la carga
+    setLoading(false);
   };
 
   const logout = () => {
+    // ✅ NO usamos localStorage.clear(). Borramos solo lo necesario.
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     setIsLoggedIn(false);

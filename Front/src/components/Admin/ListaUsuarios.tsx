@@ -1,89 +1,184 @@
 'use client';
 
-import { useState, useEffect } from "react";
-import { UserCircle, Loader2, AlertTriangle } from "lucide-react";
-import { notifyError } from "@/components/helpers/Toast";
+import { useState, useEffect, useCallback } from "react";
+import { UserCircle, Loader2, AlertTriangle, ShieldOff, ShieldCheck, Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { notifyError, notifySuccess } from "@/components/helpers/Toast";
 
 export default function ListaUsuarios() {
   const [usuarios, setUsuarios] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [errorStatus, setErrorStatus] = useState<number | null>(null);
+  const [busqueda, setBusqueda] = useState("");
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
-useEffect(() => {
-  const fetchUsuariosReales = async () => {
+  // ✅ Usamos useCallback para que la función sea estable y se pueda llamar desde cualquier lado
+  const fetchUsuarios = useCallback(async (nombre?: string, currentBatch = 1) => {
+    setLoading(true);
     try {
       const token = localStorage.getItem("token");
       
-      // Intentamos la ruta lógica, aunque sepamos que no está en el Swagger aún
-      const res = await fetch(`${API_URL}/admin/users`, {
+      // Si hay nombre usamos /search, si no, la lista paginada normal
+      const endpoint = nombre 
+        ? `${API_URL}/auth/users/search?name=${nombre}&page=${currentBatch}&limit=10` 
+        : `${API_URL}/auth/users?page=${currentBatch}&limit=10`;
+
+      const res = await fetch(endpoint, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
       if (res.ok) {
         const data = await res.json();
-        setUsuarios(Array.isArray(data) ? data : data.users || []);
+        const listaFinal = data.data || data.users || (Array.isArray(data) ? data : []);
+        setUsuarios(listaFinal);
+        setTotalPages(data.totalPages || 1);
       } else {
-        // 🛡️ Si el endpoint no existe (404), limpiamos la lista
-        // para que no muestre los datos mockeados de antes
         setUsuarios([]);
-        console.warn("El endpoint /admin/users todavía no fue creado por el backend.");
       }
     } catch (err) {
+      console.error("Error fetching users:", err);
       setUsuarios([]);
     } finally {
       setLoading(false);
     }
+  }, [API_URL]);
+
+  // ✅ Efecto que reacciona al cambio de página
+  useEffect(() => {
+    fetchUsuarios(busqueda, page);
+  }, [page, fetchUsuarios]);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    setPage(1); // Reiniciamos a la página 1 al buscar
+    fetchUsuarios(busqueda, 1);
   };
 
-  fetchUsuariosReales();
-}, [API_URL]);
+  const handleToggleBlock = async (user: any) => {
+    // 🛡️ Determinamos el estado basado en blockedAt (como vimos en tu DB)
+    const estaBloqueado = user.blockedAt !== null && user.blockedAt !== undefined;
+    const action = estaBloqueado ? 'unblock' : 'block';
+    
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${API_URL}/auth/${action}/${user.id}`, {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${token}` }
+      });
 
-  if (loading) return (
-    <div className="flex justify-center py-10"><Loader2 className="animate-spin text-magnolia-lilac" size={32} /></div>
+      if (!res.ok) throw new Error();
+      
+      notifySuccess(`Usuario ${estaBloqueado ? 'desbloqueado' : 'bloqueado'} con éxito`);
+      
+      // ✅ IMPORTANTE: Refrescamos los datos inmediatamente para ver el cambio
+      await fetchUsuarios(busqueda, page);
+    } catch (error) {
+      notifyError("No se pudo realizar la acción. Verificá los permisos del servidor.");
+    }
+  };
+
+  if (loading && usuarios.length === 0) return (
+    <div className="flex justify-center py-20"><Loader2 className="animate-spin text-magnolia-lilac" size={40} /></div>
   );
 
-  // Si no hay usuarios y hubo error 403 o 404, mostramos un aviso real
-  if (usuarios.length === 0) {
-    return (
-      <div className="bg-white p-10 rounded-2xl border border-dashed border-gray-200 text-center">
-        <AlertTriangle className="mx-auto text-yellow-500 mb-4" size={32} />
-        <h3 className="text-gray-700 font-bold">No se pudieron cargar los usuarios</h3>
-        <p className="text-gray-400 text-sm mt-2">
-          {errorStatus === 403 
-            ? "Tu usuario no tiene permisos de Administrador para ver esta lista." 
-            : "El endpoint GET /users no parece estar disponible todavía."}
-        </p>
-      </div>
-    );
-  }
-
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-      <table className="w-full">
-        {/* ... (Tu tabla igual que antes pero usando u.role === 'ADMIN' si Andre lo cambió) ... */}
-        <tbody className="divide-y divide-gray-50">
-          {usuarios.map((u) => (
-            <tr key={u.id} className="hover:bg-gray-50/50 transition-colors">
-              <td className="px-6 py-4">
-                <div className="flex items-center gap-3">
-                  <UserCircle size={20} className="text-gray-300" />
-                  <span className="text-sm font-bold text-gray-700">{u.name || u.email.split('@')[0]}</span>
-                </div>
-              </td>
-              <td className="px-6 py-4 text-sm text-gray-500">{u.email}</td>
-              <td className="px-6 py-4">
-                <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-tighter ${
-                  (u.isAdmin || u.role === 'ADMIN') ? "bg-magnolia-dark text-white" : "bg-magnolia-lilac/20 text-magnolia-dark"
-                }`}>
-                  {(u.isAdmin || u.role === 'ADMIN') ? "Administrador" : "Cliente"}
-                </span>
-              </td>
+    <div className="space-y-6 font-sans">
+      {/* BUSCADOR */}
+      <form onSubmit={handleSearch} className="flex gap-2 max-w-md bg-white p-2 rounded-xl border border-gray-100 shadow-sm">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+          <input 
+            type="text" 
+            placeholder="Buscar por nombre..."
+            className="w-full pl-10 pr-4 py-2 outline-none text-sm"
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+          />
+        </div>
+        <button type="submit" className="bg-magnolia-dark text-white px-4 py-2 rounded-lg text-xs font-bold uppercase hover:bg-magnolia-lilac transition-colors">
+          Buscar
+        </button>
+      </form>
+
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <table className="w-full text-left">
+          <thead className="bg-gray-50/50 border-b border-gray-100">
+            <tr>
+              <th className="px-6 py-4 text-[10px] uppercase font-bold text-gray-400">Usuario</th>
+              <th className="px-6 py-4 text-[10px] uppercase font-bold text-gray-400 text-center">Estado</th>
+              <th className="px-6 py-4 text-[10px] uppercase font-bold text-gray-400 text-right">Acción</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody className="divide-y divide-gray-50">
+            {usuarios.length === 0 ? (
+               <tr>
+                 <td colSpan={3} className="py-20 text-center text-gray-400 text-sm italic">No se encontraron usuarios</td>
+               </tr>
+            ) : usuarios.map((u) => {
+              const isBlocked = u.blockedAt !== null && u.blockedAt !== undefined;
+              
+              return (
+                <tr key={u.id} className="hover:bg-gray-50/30 transition-colors">
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-3">
+                      <UserCircle size={24} className={isBlocked ? "text-red-300" : "text-gray-300"} />
+                      <div className="flex flex-col">
+                        <span className={`text-sm font-bold ${isBlocked ? "text-gray-400" : "text-gray-700"}`}>
+                          {u.name || u.email?.split('@')[0]}
+                        </span>
+                        <span className="text-[11px] text-gray-400">{u.email}</span>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 text-center">
+                    <span className={`inline-block px-3 py-1 rounded-md text-[9px] font-black uppercase tracking-wider ${
+                      isBlocked ? "bg-red-50 text-red-500 border border-red-100" : "bg-green-50 text-green-600 border border-green-100"
+                    }`}>
+                      {isBlocked ? "Bloqueado" : "Activo"}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-right">
+                    {(u.role !== 'ADMIN' && !u.isAdmin) && (
+                      <button 
+                        onClick={() => handleToggleBlock(u)}
+                        className={`inline-flex items-center gap-2 text-[10px] font-bold uppercase py-2 px-3 rounded-lg transition-all ${
+                          isBlocked ? "text-green-600 hover:bg-green-50" : "text-red-500 hover:bg-red-50"
+                        }`}
+                      >
+                        {isBlocked ? <><ShieldCheck size={16} /> Desbloquear</> : <><ShieldOff size={16} /> Bloquear</>}
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+
+        {/* PAGINACIÓN */}
+        <div className="p-4 bg-gray-50/50 border-t border-gray-100 flex justify-between items-center">
+          <button 
+            disabled={page === 1 || loading} 
+            onClick={() => setPage(p => p - 1)} 
+            className="text-[10px] font-bold uppercase text-gray-400 hover:text-magnolia-dark disabled:opacity-30 transition-colors"
+          >
+            Anterior
+          </button>
+          
+          <span className="text-[11px] text-gray-400 uppercase font-medium">
+            Página {page} de {totalPages}
+          </span>
+          
+          <button 
+            disabled={page >= totalPages || loading} 
+            onClick={() => setPage(p => p + 1)} 
+            className="text-[10px] font-bold uppercase text-gray-400 hover:text-magnolia-dark disabled:opacity-30 transition-colors"
+          >
+            Siguiente
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

@@ -20,36 +20,38 @@ type WishlistContextType = {
 const WishlistContext = createContext<WishlistContextType | undefined>(undefined);
 
 export function WishlistProvider({ children }: { children: React.ReactNode }) {
-  const { isLoggedIn } = useAuth();
+  const { user } = useAuth();
+  
+  // ✅ Clave dinámica: favoritos por usuario
+  const wishlistKey = user ? `magnolia-wishlist-${user.id}` : "magnolia-wishlist-guest";
+
   const [wishlistItems, setWishlistItems] = useState<Product[]>([]);
 
-  // Cargar de memoria solo si está logueado
+  // Cargar de memoria al iniciar o cambiar usuario
   useEffect(() => {
-    if (isLoggedIn) {
-      const saved = localStorage.getItem("magnolia-wishlist");
-      if (saved) {
-        setWishlistItems(JSON.parse(saved));
-      }
+    const saved = localStorage.getItem(wishlistKey);
+    if (saved) {
+      setWishlistItems(JSON.parse(saved));
     } else {
-      // Limpiar wishlist si no está logueado
       setWishlistItems([]);
-      localStorage.removeItem("magnolia-wishlist");
     }
-  }, [isLoggedIn]);
+  }, [wishlistKey]);
 
-  // Guardar en memoria al cambiar
+  // Guardar en memoria al cambiar items
   useEffect(() => {
-    localStorage.setItem("magnolia-wishlist", JSON.stringify(wishlistItems));
-  }, [wishlistItems]);
+    if (wishlistItems.length > 0) {
+      localStorage.setItem(wishlistKey, JSON.stringify(wishlistItems));
+    } else {
+      localStorage.removeItem(wishlistKey);
+    }
+  }, [wishlistItems, wishlistKey]);
 
   const toggleWishlist = (product: Product) => {
     setWishlistItems((prev) => {
       const exists = prev.find((item) => item.id === product.id);
       if (exists) {
-        // Si ya está, lo sacamos (Remove)
         return prev.filter((item) => item.id !== product.id);
       } else {
-        // Si no está, lo agregamos (Add)
         return [...prev, product];
       }
     });

@@ -3,26 +3,24 @@
 import { useState, useEffect, use } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ChevronRight, Star, AlertCircle, Loader2 } from "lucide-react";
-import { notFound } from "next/navigation";
+import { ChevronRight, Star, Loader2 } from "lucide-react";
+import { notFound, useRouter } from "next/navigation"; // ✅ Añadimos useRouter
+import { useAuth } from "@/context/AuthContext"; // ✅ Añadimos useAuth
 import AddToCartButton from "../../../components/AddToCartButton";
 import WishlistButton from "../../../components/WishlistButton";
 import BackButton from "../../../components/BackButton";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
-// 💰 Función de formateo de precios LIMPIA
 function formatPrice(price: number): string {
-  return `$${Math.round(Number(price || 0)).toLocaleString('es-AR', {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0
-  })}`;
+  return `$${Math.round(Number(price || 0)).toLocaleString('es-AR')}`;
 }
 
 export default function ProductPage({ params }: { params: Promise<{ id: string }> }) {
-  // Desenvolvemos los params usando 'use' de React
   const resolvedParams = use(params);
   const id = resolvedParams.id;
+  const router = useRouter();
+  const { isLoggedIn } = useAuth(); // ✅ Chequeamos si hay sesión
 
   const [product, setProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -46,6 +44,15 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
     fetchProduct();
   }, [id]);
 
+  // ✅ Función para manejar clics protegidos
+  const handleProtectedAction = (action: () => void) => {
+    if (!isLoggedIn) {
+      router.push("/login");
+    } else {
+      action();
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -54,9 +61,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
     );
   }
 
-  if (!product) {
-    notFound();
-  }
+  if (!product) notFound();
 
   const displayCategory = product.category?.name || product.productType?.name || "Joyas";
 
@@ -64,7 +69,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
     ...product,
     id: product.id,
     image: product.imageUrl || "/placeholder.jpg",
-    formattedPrice: formatPrice(product.price), // ✅ Sin multiplicar por 1000
+    formattedPrice: formatPrice(product.price),
     category: displayCategory,
   };
 
@@ -81,7 +86,6 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-20">
-          {/* IMAGEN */}
           <div className="relative aspect-square w-full bg-gray-50 overflow-hidden rounded-sm border border-gray-100">
              <Image 
                src={formattedProduct.image} 
@@ -92,7 +96,6 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
              />
           </div>
 
-          {/* INFO */}
           <div className="flex flex-col justify-start pt-4">
             <h1 className="font-serif text-3xl md:text-4xl text-magnolia-dark mb-4">
                 {formattedProduct.name}
@@ -119,8 +122,24 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
 
             <div className="flex flex-col gap-4">
                 <div className="flex gap-4">
-                    <AddToCartButton product={formattedProduct} /> 
-                    <WishlistButton product={formattedProduct} />
+                    {/* ✅ Envolvemos los botones en un div que captura el clic si no está logueado */}
+                    <div className="flex-1" onClickCapture={(e) => {
+                      if (!isLoggedIn) {
+                        e.stopPropagation();
+                        router.push("/login");
+                      }
+                    }}>
+                      <AddToCartButton product={formattedProduct} /> 
+                    </div>
+
+                    <div onClickCapture={(e) => {
+                      if (!isLoggedIn) {
+                        e.stopPropagation();
+                        router.push("/login");
+                      }
+                    }}>
+                      <WishlistButton product={formattedProduct} />
+                    </div>
                 </div>
                 <p className="text-xs text-gray-400 text-center mt-2 italic">
                     🔒 Pago seguro procesado por Mercado Pago
