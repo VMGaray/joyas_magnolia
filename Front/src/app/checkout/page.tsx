@@ -3,7 +3,7 @@
 import { useCart } from "../../context/CartContext";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft, Lock, Loader2, Tag } from "lucide-react";
+import { ArrowLeft, Lock, Tag } from "lucide-react";
 import { useState } from "react";
 import MercadoPagoButton from "@/components/MercadoPagoButton";
 
@@ -20,7 +20,7 @@ export default function CheckoutPage() {
     phone: ""
   });
 
-  // --- LÓGICA DE DESCUENTOS (Igual que en el Sidebar) ---
+  // --- LÓGICA DE DESCUENTOS ---
   const PROMO_SILVER = 80000;
   const PROMO_PLATINUM = 120000;
   
@@ -45,14 +45,13 @@ export default function CheckoutPage() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
         <h2 className="text-2xl font-serif text-magnolia-dark mb-4">Tu carrito está vacío</h2>
-        <Link href="/" className="text-magnolia-lilac hover:underline">Volver a la tienda</Link>
+        <Link href="/" className="text-magnolia-lilac hover:underline font-bold uppercase text-xs tracking-widest">Volver a la tienda</Link>
       </div>
     );
   }
-  
 
   return (
-    <main className="min-h-screen bg-gray-50 py-10">
+    <main className="min-h-screen bg-gray-50 py-10 font-sans">
       <div className="container mx-auto px-4 max-w-6xl">
         <div className="flex items-center gap-2 mb-8 text-gray-500 hover:text-magnolia-dark transition-colors w-fit">
           <ArrowLeft size={18} />
@@ -61,20 +60,20 @@ export default function CheckoutPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
           {/* FORMULARIO DE ENVÍO */}
-          <div className="bg-white p-8 rounded-sm shadow-sm h-fit">
+          <div className="bg-white p-8 rounded-sm shadow-sm h-fit border border-gray-100">
             <h2 className="font-serif text-2xl text-magnolia-dark mb-6">Datos de Envío</h2>
             <div className="space-y-6">
-              <input name="email" type="email" onChange={handleInputChange} placeholder="Email" className="w-full border border-gray-300 p-3 rounded-sm outline-none focus:border-magnolia-lilac" />
+              <input name="email" type="email" value={formData.email} onChange={handleInputChange} placeholder="Email" className="w-full border border-gray-300 p-3 rounded-sm outline-none focus:border-magnolia-lilac text-sm" />
               <div className="grid grid-cols-2 gap-4">
-                <input name="name" placeholder="Nombre" onChange={handleInputChange} className="w-full border border-gray-300 p-3 rounded-sm outline-none" />
-                <input name="lastname" placeholder="Apellido" onChange={handleInputChange} className="w-full border border-gray-300 p-3 rounded-sm outline-none" />
+                <input name="name" value={formData.name} placeholder="Nombre" onChange={handleInputChange} className="w-full border border-gray-300 p-3 rounded-sm outline-none focus:border-magnolia-lilac text-sm" />
+                <input name="lastname" value={formData.lastname} placeholder="Apellido" onChange={handleInputChange} className="w-full border border-gray-300 p-3 rounded-sm outline-none focus:border-magnolia-lilac text-sm" />
               </div>
-              <input name="address" placeholder="Dirección" onChange={handleInputChange} className="w-full border border-gray-300 p-3 rounded-sm outline-none" />
+              <input name="address" value={formData.address} placeholder="Dirección" onChange={handleInputChange} className="w-full border border-gray-300 p-3 rounded-sm outline-none focus:border-magnolia-lilac text-sm" />
               <div className="grid grid-cols-2 gap-4">
-                <input name="city" placeholder="Ciudad" onChange={handleInputChange} className="w-full border border-gray-300 p-3 rounded-sm outline-none" />
-                <input name="zip" placeholder="CP" onChange={handleInputChange} className="w-full border border-gray-300 p-3 rounded-sm outline-none" />
+                <input name="city" value={formData.city} placeholder="Ciudad" onChange={handleInputChange} className="w-full border border-gray-300 p-3 rounded-sm outline-none focus:border-magnolia-lilac text-sm" />
+                <input name="zip" value={formData.zip} placeholder="CP" onChange={handleInputChange} className="w-full border border-gray-300 p-3 rounded-sm outline-none focus:border-magnolia-lilac text-sm" />
               </div>
-              <input name="phone" type="tel" placeholder="Teléfono" onChange={handleInputChange} className="w-full border border-gray-300 p-3 rounded-sm outline-none" />
+              <input name="phone" value={formData.phone} type="tel" placeholder="Teléfono (WhatsApp)" onChange={handleInputChange} className="w-full border border-gray-300 p-3 rounded-sm outline-none focus:border-magnolia-lilac text-sm" />
             </div>
           </div>
 
@@ -82,7 +81,7 @@ export default function CheckoutPage() {
           <div className="bg-white p-8 rounded-sm shadow-sm h-fit lg:sticky lg:top-10 border-t-4 border-magnolia-lilac">
             <h2 className="font-serif text-2xl text-magnolia-dark mb-6">Resumen del Pedido</h2>
             
-            <div className="space-y-4 mb-6 max-h-[250px] overflow-y-auto pr-2">
+            <div className="space-y-4 mb-6 max-h-[250px] overflow-y-auto pr-2 custom-scrollbar">
               {items.map((item) => (
                 <div key={item.id} className="flex gap-4 items-center border-b border-gray-50 pb-4 last:border-0">
                   <div className="relative w-16 h-16 bg-gray-50 rounded-sm overflow-hidden flex-shrink-0">
@@ -90,7 +89,7 @@ export default function CheckoutPage() {
                   </div>
                   <div className="flex-1">
                     <h3 className="font-serif text-[13px] text-gray-800 leading-tight">{item.name}</h3>
-                    <p className="text-[10px] text-gray-400">Cantidad: {item.quantity}</p>
+                    <p className="text-[10px] text-gray-400 uppercase tracking-tighter">Cantidad: {item.quantity}</p>
                   </div>
                   <span className="font-bold text-gray-700 text-sm">
                     ${(item.price * item.quantity).toLocaleString("es-AR")}
@@ -99,7 +98,6 @@ export default function CheckoutPage() {
               ))}
             </div>
 
-            {/* DESGLOSE DE TOTALES */}
             <div className="border-t border-gray-100 pt-6 space-y-3 mb-8">
               <div className="flex justify-between text-sm text-gray-500">
                 <span>Subtotal</span>
@@ -119,7 +117,7 @@ export default function CheckoutPage() {
 
               <div className="flex justify-between text-sm text-gray-500 pb-2">
                 <span>Envío</span>
-                <span className="text-green-600 font-bold">Sin cargo</span>
+                <span className="text-green-600 font-bold uppercase text-[10px]">Sin cargo</span>
               </div>
 
               <div className="border-t border-gray-200 pt-4 flex justify-between items-center">
