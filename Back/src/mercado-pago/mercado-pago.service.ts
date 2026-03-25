@@ -46,14 +46,23 @@ export class MercadoPagoService {
     if (!user) throw new NotFoundException('User not found');
 
     // Validar URLs de retorno
-    const successUrl = this.configService.get<string>('MP_SUCCESS_URL');
-    const failureUrl = this.configService.get<string>('MP_FAILURE_URL');
+    const baseUrl = this.configService.get<string>('MP_BASE_URL') || '';
+    let successUrl = this.configService.get<string>('MP_SUCCESS_URL');
+    let failureUrl = this.configService.get<string>('MP_FAILURE_URL');
     const notificationUrl = this.configService.get<string>('MP_NOTIFICATION_URL');
 
     if (!successUrl || !failureUrl || !notificationUrl) {
       throw new InternalServerErrorException(
         'Mercado Pago configuration error: MP_SUCCESS_URL, MP_FAILURE_URL or MP_NOTIFICATION_URL is not defined in .env',
       );
+    }
+
+    // Si las URLs son relativas, anteponer el BASE_URL
+    if (successUrl.startsWith('/') && baseUrl) {
+      successUrl = `${baseUrl}${successUrl}`;
+    }
+    if (failureUrl.startsWith('/') && baseUrl) {
+      failureUrl = `${baseUrl}${failureUrl}`;
     }
 
     const preference = new Preference(this.client);
@@ -86,15 +95,27 @@ export class MercadoPagoService {
       const duration = Date.now() - startTime;
       console.log(`[MercadoPago] Preference created successfully in ${duration}ms. ID: ${response.id}`);
 
-      // Guardar el pago inicial en la base de datos
-      const newPayment = this.paymentRepository.create({
-        amount: order.totalPrice,
-        status: 'pending',
-        externalReference: response.external_reference,
-        user: user,
-        order: order,
-      });
-      await this.paymentRepository.save(newPayment);
+      // Buscar si ya existe un pago para esta orden
+      let payment = await this.paymentRepository.findOneBy({ order: { id: order.id } });
+
+      if (payment) {
+        // Actualizar el pago existente
+        payment.amount = order.totalPrice;
+        payment.status = 'pending';
+        payment.externalReference = response.external_reference ?? null;
+        payment.user = user;
+      } else {
+        // Crear un nuevo registro de pago
+        payment = this.paymentRepository.create({
+          amount: order.totalPrice,
+          status: 'pending',
+          externalReference: response.external_reference ?? null,
+          user: user,
+          order: order,
+        });
+      }
+
+      await this.paymentRepository.save(payment);
 
       return {
         id: response.id,

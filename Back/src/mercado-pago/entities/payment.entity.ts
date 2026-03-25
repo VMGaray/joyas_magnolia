@@ -14,10 +14,10 @@ export class Payment {
   status: string;
 
   @Column({ type: 'varchar', length: 100, nullable: true })
-  externalReference: string;
+  externalReference: string | null;
 
   @Column({ type: 'varchar', length: 100, nullable: true })
-  paymentId: string;
+  paymentId: string | null;
 
   @ManyToOne(() => Auth)
   user: Auth;
