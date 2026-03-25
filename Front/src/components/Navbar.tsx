@@ -16,11 +16,39 @@ export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
 
-  // ✅ Obtenemos el objeto user para chequear isAdmin y el estado de login
   const { isLoggedIn, user } = useAuth(); 
 
-  // --- LÓGICA DE PROTECCIÓN (Senior UX) ---
-  
+  // ✅ Función mejorada para scrollear a destacados
+  const handleDestacadosClick = (e: React.MouseEvent) => {
+    e.preventDefault(); // Siempre prevenimos la navegación por defecto
+    
+    if (pathname === "/") {
+      // Si ya estamos en home, solo scrolleamos
+      scrollToDestacados();
+    } else {
+      // Si estamos en otra página, navegamos al home y después scrolleamos
+      router.push("/");
+      // Esperamos a que Next.js termine de navegar
+      setTimeout(() => {
+        scrollToDestacados();
+      }, 100);
+    }
+  };
+
+  const scrollToDestacados = () => {
+    const element = document.getElementById("destacados");
+    if (element) {
+      const navbarHeight = 120; // Altura aproximada del navbar
+      const elementPosition = element.getBoundingClientRect().top + window.pageYOffset;
+      const offsetPosition = elementPosition - navbarHeight;
+
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: "smooth"
+      });
+    }
+  };
+
   const handleCartClick = () => {
     if (!isLoggedIn) {
       router.push("/login");
@@ -44,7 +72,6 @@ export default function Navbar() {
         {/* --- BARRA SUPERIOR --- */}
         <div className="w-full relative flex justify-center items-center mb-2 h-16">
           
-          {/* FLOR (Izquierda) */}
           <div className="absolute left-0 top-1/2 -translate-y-1/2">
             <Image 
               src="/logo-flor.jpg" 
@@ -55,9 +82,8 @@ export default function Navbar() {
             />
           </div>
 
-          {/* LOGO TEXTO (Centro) */}
           <Link href="/" className="text-center group flex flex-col items-center">
-            <h1 className="font-serif text-3xl md:text-5xl tracking-widest text-magnolia-dark">
+            <h1 className="font-serif text-3xl md:text-5xl tracking-widest text-magnolia-dark text-center">
               MAGNOLIA
             </h1>
             <span className="text-[10px] md:text-xs uppercase tracking-[0.3em] text-gray-400 group-hover:text-magnolia-lilac transition-colors mt-1">
@@ -65,10 +91,8 @@ export default function Navbar() {
             </span>
           </Link>
 
-          {/* ICONOS DERECHA */}
           <div className="absolute right-0 top-1/2 -translate-y-1/2 flex items-center gap-3 md:gap-4">
             
-            {/* --- LÓGICA DE USUARIO / LOGIN --- */}
             {isLoggedIn ? (
               <Link 
                 href={user?.isAdmin ? "/admin" : "/perfil"} 
@@ -87,10 +111,8 @@ export default function Navbar() {
               </Link>
             )}
 
-            {/* ✅ Ocultamos Favoritos y Carrito si el usuario es ADMIN */}
             {!user?.isAdmin && (
               <>
-                {/* Favoritos Protegido */}
                 <button 
                   onClick={handleFavoritesClick}
                   className="text-gray-700 hover:text-red-400 transition-colors"
@@ -103,7 +125,6 @@ export default function Navbar() {
                   />
                 </button>
 
-                {/* Carrito Protegido */}
                 <button 
                   onClick={handleCartClick} 
                   className="relative text-gray-700 hover:text-magnolia-lilac transition-colors"
@@ -137,15 +158,15 @@ export default function Navbar() {
               </li>
             ))}
 
-            {/* ✅ LINK DE DESTACADOS */}
+            {/* ✅ BOTÓN DE DESTACADOS MEJORADO */}
             <li className="py-4">
-              <Link 
-                href="/#destacados" 
+              <button 
+                onClick={handleDestacadosClick}
                 className="flex items-center gap-2 bg-magnolia-lilac/10 text-magnolia-dark px-4 py-1.5 rounded-full text-[10px] uppercase tracking-widest font-black hover:bg-magnolia-dark hover:text-white transition-all shadow-sm group border border-magnolia-lilac/20"
               >
                 <Sparkles size={12} className="text-magnolia-lilac group-hover:text-white transition-colors" />
                 Destacados
-              </Link>
+              </button>
             </li>
           </ul>
         </nav>
