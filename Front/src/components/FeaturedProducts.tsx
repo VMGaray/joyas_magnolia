@@ -47,7 +47,10 @@ export default function FeaturedProducts() {
   if (products.length === 0) return null;
 
   return (
-    <section id="destacados" className="py-28 bg-gradient-to-b from-white to-[#F9F7FF] overflow-hidden scroll-mt-24">
+        <section 
+        id="destacados" 
+        className="py-28 bg-gradient-to-b from-white to-[#F9F7FF] overflow-hidden scroll-mt-24" // 👈 Cambiamos de scroll-mt-32 a scroll-mt-24
+      >
       <div className="container mx-auto px-4">
         
         {/* Cabecera Premium */}
