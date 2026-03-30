@@ -90,8 +90,8 @@ export default function MercadoPagoButton({ shippingData, amount }: MercadoPagoB
       const redirectUrl = mpData.init_point;
 
       if (redirectUrl) {
-        // Redirección limpia para evitar el bucle de "Too many redirects"
-        window.location.replace(redirectUrl);
+        // Redirección en la misma pestaña para evitar bucles de seguridad (reconocimiento facial)
+        window.location.href = redirectUrl;
       } else {
         throw new Error("No se recibió la URL de Mercado Pago.");
       }
