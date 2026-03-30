@@ -1,7 +1,40 @@
+'use client';
+
+import React, { useState } from "react";
 import Link from "next/link";
-import { Facebook, Instagram, Mail, MessageCircle } from "lucide-react";
+import { Instagram, Mail, MessageCircle, Loader2 } from "lucide-react";
+import { notifySuccess, notifyError } from "@/components/helpers/Toast";
 
 export default function Footer() {
+  const [email, setEmail] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [isSubscribed, setIsSubscribed] = useState(false);
+
+  const handleSubscribe = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!email || !email.includes("@")) {
+      notifyError("Por favor, ingresá un email válido 📩");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      // ✅ SIMULACIÓN DE ENVÍO
+      // Cuando Andre tenga el endpoint, acá cambiarías esto por un fetch a /newsletter
+      await new Promise((resolve) => setTimeout(resolve, 1000)); 
+
+      notifySuccess("¡Gracias por suscribirte a Magnolia! ✨");
+      setIsSubscribed(true);
+      setEmail("");
+    } catch (error) {
+      notifyError("Hubo un error, intentá más tarde.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <footer className="bg-magnolia-dark text-white pt-16 pb-8">
       <div className="container mx-auto px-4">
@@ -16,20 +49,20 @@ export default function Footer() {
               Joyas diseñadas para celebrar nuevos comienzos y guardar recuerdos eternos.
             </p>
             
-            {/* Redes Sociales */}
             <div className="flex gap-4">
-              <a href="https://instagram.com" target="_blank" className="text-gray-400 hover:text-white transition-colors">
+              <a 
+                href="https://www.instagram.com/joyas.magnolias.vgb/" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="text-gray-400 hover:text-white transition-colors"
+              >
                 <Instagram size={20} />
               </a>
-              <a href="https://facebook.com" target="_blank" className="text-gray-400 hover:text-white transition-colors">
-                <Facebook size={20} />
-              </a>
-              <a href="mailto:hola@magnolia.com" className="text-gray-400 hover:text-white transition-colors">
+              <a href="mailto:magnoliajoyas7@gmail.com" className="text-gray-400 hover:text-white transition-colors">
                 <Mail size={20} />
               </a>
             </div>
 
-            {/* Link de WhatsApp Agregado */}
             <a 
               href="https://wa.me/5493546567106" 
               target="_blank" 
@@ -39,7 +72,6 @@ export default function Footer() {
               <MessageCircle size={20} className="text-green-500" />
               <span className="font-sans text-sm tracking-wide">+54 9 3546 56-7106</span>
             </a>
-
           </div>
 
           {/* Columna 2: Shop */}
@@ -64,28 +96,48 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Columna 4: Newsletter */}
+          {/* Columna 4: Newsletter (MODIFICADA) */}
           <div>
             <h4 className="font-serif text-lg mb-6">Newsletter</h4>
-            <p className="font-sans text-sm text-gray-400 mb-4">
-              Suscribite para recibir novedades y descuentos exclusivos.
-            </p>
-            <form className="flex flex-col gap-3">
-              <input 
-                type="email" 
-                placeholder="Tu email" 
-                className="bg-transparent border border-gray-600 px-4 py-2 text-sm focus:outline-none focus:border-white transition-colors"
-              />
-              <button className="bg-white text-magnolia-dark px-4 py-2 text-xs uppercase tracking-widest font-bold hover:bg-magnolia-lilac hover:text-white transition-colors">
-                Suscribirse
-              </button>
-            </form>
+            {isSubscribed ? (
+              <div className="bg-white/5 border border-magnolia-lilac/20 p-6 rounded-xl animate-in fade-in zoom-in duration-500">
+                <p className="font-serif italic text-magnolia-lilac text-sm text-center">
+                  ¡Te suscribiste con éxito!<br/>Pronto recibirás nuestras novedades.
+                </p>
+              </div>
+            ) : (
+              <>
+                <p className="font-sans text-sm text-gray-400 mb-4">
+                  Suscribite para recibir novedades y descuentos exclusivos.
+                </p>
+                <form className="flex flex-col gap-3" onSubmit={handleSubscribe}>
+                  <input 
+                    type="email" 
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Tu email" 
+                    required
+                    className="bg-transparent border border-gray-600 px-4 py-2 text-sm focus:outline-none focus:border-white transition-colors text-white"
+                  />
+                  <button 
+                    disabled={loading}
+                    className="bg-white text-magnolia-dark px-4 py-2 text-[10px] uppercase tracking-widest font-black hover:bg-magnolia-lilac hover:text-white transition-all flex items-center justify-center gap-2"
+                  >
+                    {loading ? (
+                      <Loader2 size={14} className="animate-spin" />
+                    ) : (
+                      "Suscribirse"
+                    )}
+                  </button>
+                </form>
+              </>
+            )}
           </div>
 
         </div>
 
-        {/* BARRA INFERIOR (Copyright) */}
-        <div className="border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-gray-500 font-sans">
+        {/* BARRA INFERIOR */}
+        <div className="border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-gray-500 font-sans text-center md:text-left">
           <p>&copy; {new Date().getFullYear()} Magnolia Joyas. Todos los derechos reservados.</p>
           <div className="flex gap-6">
             <Link href="/privacidad" className="hover:text-white">Política de Privacidad</Link>

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { ShoppingCart, ChevronDown, Heart, User, LayoutDashboard, Sparkles } from "lucide-react";
+import { ShoppingCart, ChevronDown, Heart, User, LayoutDashboard, Sparkles, MessageCircle } from "lucide-react";
 import { MENU_ITEMS } from "@/data/menuData"; 
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
@@ -20,15 +20,12 @@ export default function Navbar() {
 
   // ✅ Función mejorada para scrollear a destacados
   const handleDestacadosClick = (e: React.MouseEvent) => {
-    e.preventDefault(); // Siempre prevenimos la navegación por defecto
+    e.preventDefault();
     
     if (pathname === "/") {
-      // Si ya estamos en home, solo scrolleamos
       scrollToDestacados();
     } else {
-      // Si estamos en otra página, navegamos al home y después scrolleamos
       router.push("/");
-      // Esperamos a que Next.js termine de navegar
       setTimeout(() => {
         scrollToDestacados();
       }, 100);
@@ -38,7 +35,7 @@ export default function Navbar() {
   const scrollToDestacados = () => {
     const element = document.getElementById("destacados");
     if (element) {
-      const navbarHeight = 120; // Altura aproximada del navbar
+      const navbarHeight = 120;
       const elementPosition = element.getBoundingClientRect().top + window.pageYOffset;
       const offsetPosition = elementPosition - navbarHeight;
 
@@ -158,7 +155,7 @@ export default function Navbar() {
               </li>
             ))}
 
-            {/* ✅ BOTÓN DE DESTACADOS MEJORADO */}
+            {/* ✅ BOTÓN DE DESTACADOS */}
             <li className="py-4">
               <button 
                 onClick={handleDestacadosClick}
@@ -167,6 +164,19 @@ export default function Navbar() {
                 <Sparkles size={12} className="text-magnolia-lilac group-hover:text-white transition-colors" />
                 Destacados
               </button>
+            </li>
+
+            {/* ✅ BOTÓN VENTAS MAYORISTAS (Nuevo) */}
+            <li className="py-4">
+              <a 
+                href="https://wa.me/5493546567106?text=Hola!%20Me%20interesa%20obtener%20información%20sobre%20ventas%20mayoristas."
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 bg-gray-50 text-gray-500 px-4 py-1.5 rounded-full text-[10px] uppercase tracking-widest font-bold hover:bg-green-50 hover:text-green-600 border border-gray-200 hover:border-green-200 transition-all shadow-sm group"
+              >
+                <MessageCircle size={12} className="text-gray-400 group-hover:text-green-500 transition-colors" />
+                Ventas Mayoristas
+              </a>
             </li>
           </ul>
         </nav>
