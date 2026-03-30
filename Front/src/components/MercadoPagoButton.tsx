@@ -87,7 +87,7 @@ export default function MercadoPagoButton({ shippingData, amount }: MercadoPagoB
       if (!preferenceRes.ok) throw new Error("Error al generar preferencia de pago.");
 
       const mpData = await preferenceRes.json();
-      const redirectUrl = mpData.sandbox_init_point || mpData.init_point;
+      const redirectUrl = mpData.init_point;
 
       if (redirectUrl) {
         // Redirección limpia para evitar el bucle de "Too many redirects"
