@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Mail, Key, Lock, ArrowLeft, Loader2, CheckCircle } from "lucide-react";
+import { Mail, Key, Lock, ArrowLeft, Loader2, CheckCircle, Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import { notifySuccess, notifyError } from "@/components/helpers/Toast";
 
@@ -15,6 +15,8 @@ export const ForgotPassword = () => {
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [passwords, setPasswords] = useState({ password: "", password2: "" });
+  const [showPassword, setShowPassword] = useState(false);
+  const [showPassword2, setShowPassword2] = useState(false);
 
   const handleSendEmail = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -136,12 +138,26 @@ export const ForgotPassword = () => {
         {step === Step.NEW_PASSWORD && (
           <>
             <div className="relative font-sans">
-              <input type="password" required value={passwords.password} onChange={(e) => setPasswords({...passwords, password: e.target.value})} className="w-full border border-gray-300 pl-10 pr-4 py-3 text-sm focus:border-magnolia-lilac outline-none transition-colors" placeholder="Nueva contraseña" />
+              <input type={showPassword ? "text" : "password"} required value={passwords.password} onChange={(e) => setPasswords({...passwords, password: e.target.value})} className="w-full border border-gray-300 pl-10 pr-10 py-3 text-sm focus:border-magnolia-lilac outline-none transition-colors" placeholder="Nueva contraseña" />
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+              <button 
+                type="button" 
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-800 transition-colors"
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
             </div>
             <div className="relative font-sans">
-              <input type="password" required value={passwords.password2} onChange={(e) => setPasswords({...passwords, password2: e.target.value})} className="w-full border border-gray-300 pl-10 pr-4 py-3 text-sm focus:border-magnolia-lilac outline-none transition-colors" placeholder="Confirmar contraseña" />
+              <input type={showPassword2 ? "text" : "password"} required value={passwords.password2} onChange={(e) => setPasswords({...passwords, password2: e.target.value})} className="w-full border border-gray-300 pl-10 pr-10 py-3 text-sm focus:border-magnolia-lilac outline-none transition-colors" placeholder="Confirmar contraseña" />
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+              <button 
+                type="button" 
+                onClick={() => setShowPassword2(!showPassword2)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-800 transition-colors"
+              >
+                {showPassword2 ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
             </div>
           </>
         )}

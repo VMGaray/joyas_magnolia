@@ -1,18 +1,24 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
+import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Observable } from 'rxjs';
 import { RequestWithUser } from '../interfaces/requestUser.interface';
 import { UserPayload } from '../interfaces/userPayload.interface';
 import { Role } from '../rol.enum';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Auth } from '../entities/auth.entity';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
-  constructor(private readonly jwtService: JwtService) {}
+  constructor(
+    private readonly jwtService: JwtService,
+    @InjectRepository(Auth) private readonly authRepository: Repository<Auth>
+  ) {}
 
-  canActivate(
+  async canActivate(
     context: ExecutionContext,
-  ): boolean | Promise<boolean> | Observable<boolean> {
+  ): Promise<boolean> {
     const request: RequestWithUser = context.switchToHttp().getRequest();
 
     const autentification = request.headers.authorization; //Bearer token
@@ -24,7 +30,13 @@ export class AuthGuard implements CanActivate {
     const secret = process.env.JWT_SECRET;
 
     try {
-      const user: UserPayload = this.jwtService.verify(token, { secret });
+      const user: any = this.jwtService.verify(token, { secret });
+
+      // Verificar versión del token en BD
+      const dbUser = await this.authRepository.findOne({ where: { id: user.id } });
+      if (!dbUser || dbUser.tokenVersion !== user.tokenVersion) {
+        return false;
+      }
 
       if (user.isAdmin) {
         user.roles = [Role.Admin];

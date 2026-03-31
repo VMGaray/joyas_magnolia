@@ -13,6 +13,7 @@ import { MercadoPagoModule } from './mercado-pago/mercado-pago.module';
 import { ProductRatingsModule } from './product-ratings/product-ratings.module';
 import { AdminModule } from './admin/admin.module';
 import { OrderModule } from './order/order.module';
+import { ThrottlerModule } from '@nestjs/throttler';
 
 @Module({
   imports: [
@@ -37,9 +38,13 @@ import { OrderModule } from './order/order.module';
     }),
     JwtModule.register({
       global: true,
-      signOptions: { expiresIn: '60m' },
+      signOptions: { expiresIn: '7d' },
       secret: process.env.JWT_SECRET,
     }),
+    ThrottlerModule.forRoot([{
+      ttl: 60000,
+      limit: 100,
+    }]),
     ProductsModule,
     AuthModule,
     UploadImageModule,

@@ -7,31 +7,50 @@ import {
   Post,
   Put,
   Query,
+  Req,
+  UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { ChangePasswordDto, ForgotPasswordDto, LoginDto, RegisterDto, ResetPasswordDto, UpdateUserDto, VerifyCodeDto } from './dtos/auth.dto';
+import { ChangePasswordDto, ForgotPasswordDto, LoginDto, RegisterDto, ResetPasswordDto, UpdateUserDto, VerifyCodeDto, ChangePasswordWithCodeDto, VerifyRegistrationDto, VerifyAdminLoginDto } from './dtos/auth.dto';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { Roles } from 'src/decorators/rol.decorator';
 import { Role } from './rol.enum';
 import { AuthGuard } from './guards/auth.guard';
 import { RolesGuard } from './guards/roles.guard';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) { }
 
+  @ApiOperation({ summary: 'Verify user registration code' })
+  @Post('verify-registration')
+  async verifyRegistration(@Body() data: VerifyRegistrationDto) {
+    return this.authService.verifyRegistration(data);
+  }
+
   @ApiOperation({ summary: 'Register a new user' })
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post('register')
   async register(@Body() user: RegisterDto) {
     return this.authService.registerUser(user);
   }
 
   @ApiOperation({ summary: 'Login a user' })
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Post('login')
   async login(@Body() credentials: LoginDto) {
     return this.authService.loginUser(credentials);
+  }
+
+  @ApiOperation({ summary: 'Verify Admin 2FA Login' })
+  @Post('verify-admin-login')
+  async verifyAdminLogin(@Body() data: VerifyAdminLoginDto) {
+    return this.authService.verifyAdminLogin(data);
   }
 
   @ApiOperation({ summary: 'Get user profile' })
@@ -39,7 +58,8 @@ export class AuthController {
   @ApiBearerAuth()
   @Roles(Role.User)
   @UseGuards(AuthGuard, RolesGuard)
-  async getProfile(@Param('id') id: string) {
+  async getProfile(@Param('id') id: string, @Req() req: any) {
+    if (req.user.id !== id && !req.user.isAdmin) throw new UnauthorizedException('No tienes permiso para ver este perfil');
     return this.authService.getUserById(id);
   }
 
@@ -51,7 +71,9 @@ export class AuthController {
   async updateProfile(
     @Param('id') id: string,
     @Body() data: UpdateUserDto,
+    @Req() req: any,
   ) {
+    if (req.user.id !== id && !req.user.isAdmin) throw new UnauthorizedException('No tienes permiso para actualizar este perfil');
     return this.authService.updateUser(id, data);
   }
 
@@ -62,9 +84,20 @@ export class AuthController {
   @UseGuards(AuthGuard, RolesGuard)
   async changePassword(
     @Param('id') id: string,
-    @Body() data: ChangePasswordDto,
+    @Body() data: ChangePasswordWithCodeDto,
+    @Req() req: any,
   ) {
-    return this.authService.changePassword(id, data);
+    if (req.user.id !== id) throw new UnauthorizedException('No tienes permiso para cambiar esta contraseña');
+    return this.authService.changePasswordWithCode(id, data);
+  }
+
+  @ApiOperation({ summary: 'Request password change code (User logged in)' })
+  @Post('request-change-password-code')
+  @ApiBearerAuth()
+  @Roles(Role.User)
+  @UseGuards(AuthGuard, RolesGuard)
+  async requestChangePasswordCode(@Req() req: any) {
+    return this.authService.requestPasswordChangeCode(req.user.id);
   }
 
   @ApiBearerAuth()

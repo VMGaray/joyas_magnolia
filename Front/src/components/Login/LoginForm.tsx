@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Mail, Lock, ArrowRight, Loader2 } from "lucide-react";
+import { Mail, Lock, ArrowRight, Loader2, Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { notifyError } from "@/components/helpers/Toast";
@@ -12,6 +12,9 @@ export const LoginForm = () => {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [step, setStep] = useState<1 | 2>(1);
+  const [adminCode, setAdminCode] = useState("");
 
   const [welcomeMessage, setWelcomeMessage] = useState<string | null>(null);
   const [userName, setUserName] = useState<string>("");
@@ -59,6 +62,12 @@ export const LoginForm = () => {
         return;
       }
 
+      if (response.ok && data?.requires2FA) {
+        setStep(2);
+        setLoading(false);
+        return;
+      }
+
       let token: string | null = data?.token || data?.access_token || null;
 
       if (!token && response.ok && responseText.length > 100) {
@@ -100,6 +109,50 @@ export const LoginForm = () => {
     }
   };
 
+  const handleVerifyAdmin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+
+    try {
+      const response = await fetch("http://localhost:4000/auth/verify-admin-login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: formData.email, code: adminCode }),
+      });
+
+      const responseText = await response.text();
+      let data: any = {};
+      try { data = JSON.parse(responseText); } catch {}
+
+      if (!response.ok) {
+        throw new Error(data.message || "Código inválido");
+      }
+
+      const token = data?.token || data?.access_token || responseText;
+      const cleanToken = token.replace(/^"|"$/g, "");
+      
+      await login(cleanToken);
+      await new Promise(resolve => setTimeout(resolve, 300));
+
+      const storedUser = localStorage.getItem("user");
+      const parsedUser = storedUser ? JSON.parse(storedUser) : null;
+
+      setWelcomeMessage("Ingreso Administrador Exitoso ✨");
+      setUserName(parsedUser?.username || "Admin");
+      
+      setTimeout(() => {
+        window.location.replace("/admin");
+      }, 1500);
+
+    } catch (err: any) {
+      setError(err.message);
+      notifyError("Error al verificar código ❌");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="bg-white w-full max-w-md p-8 rounded-sm shadow-sm border border-gray-100 font-sans">
       <div className="text-center mb-8">
@@ -113,7 +166,9 @@ export const LoginForm = () => {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      {step === 1 ? (
+      <>
+        <form onSubmit={handleSubmit} className="space-y-6">
         <div>
           <label className="block text-xs uppercase tracking-wider text-gray-500 mb-2 font-bold">Email</label>
           <div className="relative">
@@ -139,15 +194,22 @@ export const LoginForm = () => {
           </div>
           <div className="relative">
             <input 
-              type="password" 
+              type={showPassword ? "text" : "password"}
               name="password"
               value={formData.password}
               onChange={handleChange}
               required
               placeholder="••••••••" 
-              className="w-full border border-gray-300 pl-10 pr-4 py-3 rounded-sm focus:outline-none focus:border-magnolia-lilac transition-colors text-sm"
+              className="w-full border border-gray-300 pl-10 pr-10 py-3 rounded-sm focus:outline-none focus:border-magnolia-lilac transition-colors text-sm"
             />
             <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+            <button 
+              type="button" 
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-800 transition-colors"
+            >
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
           </div>
         </div>
 
@@ -184,7 +246,46 @@ export const LoginForm = () => {
         >
           Crear Cuenta
         </Link>
-      </div>
+        </div>
+      </>
+      ) : (
+        <form onSubmit={handleVerifyAdmin} className="space-y-6">
+          <p className="text-gray-600 text-sm text-center mb-4">
+            Ingresa el código de seguridad que enviamos a tu correo de administrador.
+          </p>
+          <div>
+            <label className="block text-xs uppercase tracking-wider text-gray-500 mb-2 font-bold text-center">Código 2FA</label>
+            <div className="relative">
+              <input 
+                type="text" 
+                maxLength={6}
+                required
+                value={adminCode}
+                onChange={(e) => setAdminCode(e.target.value)}
+                placeholder="123456" 
+                className="w-full border border-gray-300 px-4 py-3 rounded-sm focus:outline-none focus:border-magnolia-lilac transition-colors text-center tracking-[0.5em] font-mono text-lg"
+              />
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+            </div>
+          </div>
+
+          <button 
+            type="submit" 
+            disabled={loading}
+            className="w-full bg-magnolia-dark text-white py-4 uppercase tracking-[0.2em] text-xs hover:bg-magnolia-lilac transition-colors font-bold flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
+          >
+            {loading ? <Loader2 className="animate-spin" size={18} /> : <>Verificar y Entrar <ArrowRight size={16} /></>}
+          </button>
+          
+          <button
+            type="button"
+            onClick={() => setStep(1)}
+            className="w-full border border-gray-300 text-gray-600 py-3 uppercase tracking-widest text-xs font-bold hover:bg-gray-50 transition-colors mt-2"
+          >
+            Volver
+          </button>
+        </form>
+      )}
 
       {welcomeMessage && (
         <WelcomeModal

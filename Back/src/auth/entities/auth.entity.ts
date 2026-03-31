@@ -28,10 +28,10 @@ export class Auth {
   address: string;
 
   @Column({ type: 'varchar', length: 6, nullable: true })
-  resetPasswordCode: string;
+  resetPasswordCode: string | null;
 
   @Column({ type: 'timestamp', nullable: true })
-  resetPasswordExpires: Date;
+  resetPasswordExpires: Date | null;
 
   @OneToMany(() => ProductRating, (rating) => rating.user)
   ratings: ProductRating[];
@@ -44,4 +44,16 @@ export class Auth {
 
   @Column({ type: 'timestamp', nullable: true })
   blockedAt: Date | null;
+
+  @Column({ type: 'boolean', default: false })
+  isVerified: boolean;
+
+  @Column({ type: 'varchar', length: 6, nullable: true })
+  registrationCode: string | null;
+
+  @Column({ type: 'timestamp', nullable: true })
+  registrationExpires: Date | null;
+
+  @Column({ type: 'int', default: 0 })
+  tokenVersion: number;
 }

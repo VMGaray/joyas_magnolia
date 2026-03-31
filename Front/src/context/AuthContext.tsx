@@ -43,6 +43,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const decodeToken = (token: string): User | null => {
     try {
       const decoded: any = jwtDecode(token);
+      
+      if (decoded.exp && decoded.exp * 1000 < Date.now()) {
+        console.warn("Token ha expirado.");
+        return null;
+      }
+
       const roles: string[] = decoded.roles || [];
       const isAdminFromRoles = Array.isArray(roles) && roles.includes("admin");
 
@@ -63,6 +69,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const res = await fetch(`http://localhost:4000/auth/profile/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
+
+      if (res.status === 401) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        setIsLoggedIn(false);
+        setToken(null);
+        setUser(null);
+        window.location.href = "/";
+        return null;
+      }
+
       if (!res.ok) throw new Error("No se pudo obtener el perfil");
       const profile = await res.json();
       
@@ -84,12 +101,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const storedUser = localStorage.getItem("user");
       
       if (storedToken) {
+        const decoded = decodeToken(storedToken);
+        
+        if (!decoded) {
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
+          setIsLoggedIn(false);
+          setToken(null);
+          setUser(null);
+          return;
+        }
+
         setIsLoggedIn(true);
         setToken(storedToken);
         if (storedUser) {
           setUser(JSON.parse(storedUser));
         } else {
-          setUser(decodeToken(storedToken));
+          setUser(decoded);
         }
       }
     } catch (err) {

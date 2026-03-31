@@ -146,6 +146,42 @@ export class ChangePasswordDto {
   password2: string;
 }
 
+export class ChangePasswordWithCodeDto {
+  @ApiProperty({
+    example: '123456',
+  })
+  @IsNotEmpty()
+  @IsString()
+  @Length(6, 6)
+  code: string;
+
+  @ApiProperty({
+    example: 'Contraseña1234+',
+  })
+  @IsNotEmpty()
+  @IsStrongPassword({
+    minLowercase: 1,
+    minUppercase: 1,
+    minNumbers: 1,
+    minSymbols: 1,
+  })
+  @Length(3, 15)
+  password: string;
+
+  @ApiProperty({
+    example: 'Contraseña1234+',
+  })
+  @IsNotEmpty()
+  @IsStrongPassword({
+    minLowercase: 1,
+    minUppercase: 1,
+    minNumbers: 1,
+    minSymbols: 1,
+  })
+  @Length(3, 15)
+  password2: string;
+}
+
 export class ForgotPasswordDto {
   @ApiProperty({
     example: 'mariaperez@gmail.com',
@@ -158,6 +194,40 @@ export class ForgotPasswordDto {
 export class VerifyCodeDto {
   @ApiProperty({
     example: 'mariaperez@gmail.com',
+  })
+  @IsNotEmpty()
+  @IsEmail()
+  email: string;
+
+  @ApiProperty({
+    example: '123456',
+  })
+  @IsNotEmpty()
+  @IsString()
+  @Length(6, 6)
+  code: string;
+}
+
+export class VerifyRegistrationDto {
+  @ApiProperty({
+    example: 'mariaperez@gmail.com',
+  })
+  @IsNotEmpty()
+  @IsEmail()
+  email: string;
+
+  @ApiProperty({
+    example: '123456',
+  })
+  @IsNotEmpty()
+  @IsString()
+  @Length(6, 6)
+  code: string;
+}
+
+export class VerifyAdminLoginDto {
+  @ApiProperty({
+    example: 'admin@magnolia.com',
   })
   @IsNotEmpty()
   @IsEmail()

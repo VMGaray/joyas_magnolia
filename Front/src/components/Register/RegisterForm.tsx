@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Mail, Lock, User, ArrowRight, Loader2, Phone } from "lucide-react";
+import { Mail, Lock, User, ArrowRight, Loader2, Phone, Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { WelcomeModal } from "../Login/WelcomeModal";
@@ -10,6 +10,10 @@ export const RegisterForm = () => {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [step, setStep] = useState<1 | 2>(1);
+  const [verificationCode, setVerificationCode] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [welcomeMessage, setWelcomeMessage] = useState<string | null>(null);
   const [userName, setUserName] = useState<string>("");
 
@@ -71,9 +75,48 @@ export const RegisterForm = () => {
         throw new Error(serverError || "Ocurrió un error al registrarse");
       }
 
+      // Pasar al paso 2
+      setStep(2);
+      
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerify = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+
+    try {
+      const response = await fetch("http://localhost:4000/auth/verify-registration", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: formData.email,
+          code: verificationCode
+        }),
+      });
+
+      const responseText = await response.text();
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch {
+        data = { message: responseText };
+      }
+
+      if (!response.ok) {
+        const serverError = Array.isArray(data.message) ? data.message.join(", ") : data.message;
+        throw new Error(serverError || "Código inválido o expirado");
+      }
+
       // Mostrar modal de bienvenida
       const fullNameForWelcome = `${formData.firstName} ${formData.lastName}`.trim();
-      setWelcomeMessage("¡Cuenta creada con éxito! ✨");
+      setWelcomeMessage("¡Cuenta creada y verificada con éxito! ✨");
       setUserName(fullNameForWelcome);
 
       // Redirigir después de 2 segundos
@@ -103,6 +146,7 @@ export const RegisterForm = () => {
             </div>
         )}
 
+        {step === 1 ? (
         <form onSubmit={handleSubmit} className="space-y-4">
           
           {/* Nombre y Apellido */}
@@ -159,11 +203,18 @@ export const RegisterForm = () => {
             <label className="block text-xs uppercase tracking-wider text-gray-500 mb-1">Contraseña</label>
             <div className="relative">
                 <input 
-                    type="password" name="password" required placeholder="Mínimo 8 caracteres, Mayúscula y símbolo"
+                    type={showPassword ? "text" : "password"} name="password" required placeholder="Mínimo 8 caracteres, Mayúscula y símbolo"
                     value={formData.password} onChange={handleChange}
-                    className="w-full border border-gray-300 pl-8 pr-4 py-2 rounded-sm focus:outline-none focus:border-magnolia-lilac text-sm" 
+                    className="w-full border border-gray-300 pl-8 pr-10 py-2 rounded-sm focus:outline-none focus:border-magnolia-lilac text-sm" 
                 />
                 <Lock className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                <button 
+                  type="button" 
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-800 transition-colors"
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
             </div>
           </div>
 
@@ -172,11 +223,18 @@ export const RegisterForm = () => {
             <label className="block text-xs uppercase tracking-wider text-gray-500 mb-1">Repetir Contraseña</label>
             <div className="relative">
                 <input 
-                    type="password" name="confirmPassword" required
+                    type={showConfirmPassword ? "text" : "password"} name="confirmPassword" required
                     value={formData.confirmPassword} onChange={handleChange}
-                    className="w-full border border-gray-300 pl-8 pr-4 py-2 rounded-sm focus:outline-none focus:border-magnolia-lilac text-sm" 
+                    className="w-full border border-gray-300 pl-8 pr-10 py-2 rounded-sm focus:outline-none focus:border-magnolia-lilac text-sm" 
                 />
                 <Lock className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                <button 
+                  type="button" 
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-800 transition-colors"
+                >
+                  {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
             </div>
           </div>
 
@@ -184,10 +242,42 @@ export const RegisterForm = () => {
             type="submit" disabled={loading}
             className="w-full bg-magnolia-dark text-white py-3 uppercase tracking-widest text-xs font-bold hover:bg-magnolia-lilac transition-colors flex items-center justify-center gap-2 mt-4 disabled:opacity-50"
           >
-            {loading ? <Loader2 className="animate-spin" size={16} /> : <>Registrarme <ArrowRight size={16} /></>}
+            {loading ? <Loader2 className="animate-spin" size={16} /> : <>Continuar <ArrowRight size={16} /></>}
           </button>
 
         </form>
+        ) : (
+          <form onSubmit={handleVerify} className="space-y-6">
+            <p className="text-gray-600 text-sm text-center mb-4">
+              Hemos enviado un código a <strong>{formData.email}</strong>. Por favor ingresalo para finalizar.
+            </p>
+            <div>
+              <label className="block text-xs uppercase tracking-wider text-gray-500 mb-1 text-center">Código de Verificación</label>
+              <div className="relative">
+                <input 
+                    type="text" required maxLength={6}
+                    value={verificationCode} onChange={(e) => setVerificationCode(e.target.value)}
+                    className="w-full border border-gray-300 px-4 py-3 rounded-sm focus:outline-none focus:border-magnolia-lilac text-center tracking-[0.5em] font-mono text-lg" 
+                    placeholder="123456"
+                />
+              </div>
+            </div>
+
+            <button 
+              type="submit" disabled={loading}
+              className="w-full bg-magnolia-dark text-white py-3 uppercase tracking-widest text-xs font-bold hover:bg-magnolia-lilac transition-colors flex items-center justify-center gap-2 mt-4 disabled:opacity-50"
+            >
+              {loading ? <Loader2 className="animate-spin" size={16} /> : <>Verificar y Registrarme <ArrowRight size={16} /></>}
+            </button>
+            <button
+               type="button"
+               onClick={() => setStep(1)}
+               className="w-full border border-gray-300 text-gray-600 py-3 uppercase tracking-widest text-xs font-bold hover:bg-gray-50 transition-colors mt-2"
+            >
+               Volver
+            </button>
+          </form>
+        )}
 
         <div className="text-center mt-6">
             <p className="text-sm text-gray-600">
