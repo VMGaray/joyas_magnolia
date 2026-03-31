@@ -22,7 +22,16 @@ export class OrderService {
   ) {}
 
   async createOrder(createOrderDto: CreateOrderDto): Promise<Order> {
-    const { userId, items } = createOrderDto;
+    const { 
+      userId, 
+      items, 
+      shippingAddress, 
+      shippingCity, 
+      shippingZipCode, 
+      shippingState, 
+      recipientPhone, 
+      recipientName 
+    } = createOrderDto;
 
     const user = await this.authRepository.findOneBy({ id: userId });
     if (!user) {
@@ -68,6 +77,12 @@ export class OrderService {
       items: orderItems,
       totalPrice,
       status: OrderStatus.PENDING,
+      shippingAddress: shippingAddress || user.address,
+      shippingCity: shippingCity || user.city,
+      shippingZipCode: shippingZipCode || user.zipCode,
+      shippingState: shippingState || user.state,
+      recipientPhone: recipientPhone || user.phone?.toString(),
+      recipientName: recipientName || user.username,
     });
 
     return await this.orderRepository.save(order);

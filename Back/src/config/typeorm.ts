@@ -14,7 +14,7 @@ const config = {
   username: process.env.DB_USERNAME || 'postgres',
   password: process.env.DB_PASSWORD || 'password',
   database: process.env.DB_NAME || 'aidi_db',
-  synchronize: false,
+  synchronize: true,
   dropSchema: false,
   logging: ['error'],
   entities: [__filename.endsWith('.js') ? 'dist/**/*.entity.js' : 'src/**/*.entity.ts'],

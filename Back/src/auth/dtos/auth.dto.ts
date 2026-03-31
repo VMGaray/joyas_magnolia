@@ -35,6 +35,24 @@ export class UpdateUserDto {
   @IsString()
   @Length(3, 150)
   address?: string;
+
+  @ApiProperty({ example: 'Buenos Aires', required: false })
+  @IsOptional()
+  @IsString()
+  @Length(2, 100)
+  city?: string;
+
+  @ApiProperty({ example: '1425', required: false })
+  @IsOptional()
+  @IsString()
+  @Length(2, 20)
+  zipCode?: string;
+
+  @ApiProperty({ example: 'CABA', required: false })
+  @IsOptional()
+  @IsString()
+  @Length(2, 100)
+  state?: string;
 }
 
 export class RegisterDto {

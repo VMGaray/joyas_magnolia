@@ -17,6 +17,24 @@ export class Order {
   @CreateDateColumn()
   createdAt: Date;
 
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  shippingAddress: string;
+
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  shippingCity: string;
+
+  @Column({ type: 'varchar', length: 20, nullable: true })
+  shippingZipCode: string;
+
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  shippingState: string;
+
+  @Column({ type: 'varchar', length: 20, nullable: true })
+  recipientPhone: string;
+
+  @Column({ type: 'varchar', length: 150, nullable: true })
+  recipientName: string;
+
   @ManyToOne(() => Auth, (user) => user.orders)
   user: Auth;
 

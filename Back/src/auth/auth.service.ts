@@ -137,6 +137,24 @@ export class AuthService {
       email: user.email,
       phone: user.phone,
       address: user.address,
+      city: user.city,
+      zipCode: user.zipCode,
+      state: user.state,
+    };
+  }
+
+  async getShippingData(id: string) {
+    const user = await this.authRepository.findOne({ where: { id } });
+    if (!user) throw new BadRequestException('Usuario no encontrado');
+    if (user.blockedAt) throw new BadRequestException('Usuario bloqueado');
+
+    return {
+      address: user.address,
+      city: user.city,
+      zipCode: user.zipCode,
+      state: user.state,
+      phone: user.phone,
+      username: user.username,
     };
   }
 
@@ -156,7 +174,10 @@ export class AuthService {
       username: updatedUser.username,
       email: updatedUser.email,
       phone: updatedUser.phone,
-      address: updatedUser.address
+      address: updatedUser.address,
+      city: updatedUser.city,
+      zipCode: updatedUser.zipCode,
+      state: updatedUser.state,
     };
   }
 

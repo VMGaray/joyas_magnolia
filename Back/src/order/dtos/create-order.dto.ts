@@ -1,4 +1,4 @@
-import { IsArray, IsNotEmpty, IsNumber, IsUUID, ValidateNested } from 'class-validator';
+import { IsArray, IsNotEmpty, IsNumber, IsOptional, IsString, IsUUID, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 
@@ -38,4 +38,34 @@ export class CreateOrderDto {
   @ValidateNested({ each: true })
   @Type(() => OrderItemDto)
   items: OrderItemDto[];
+
+  @ApiProperty({ description: 'Shipping address', required: false })
+  @IsString()
+  @IsOptional()
+  shippingAddress?: string;
+
+  @ApiProperty({ description: 'Shipping city', required: false })
+  @IsString()
+  @IsOptional()
+  shippingCity?: string;
+
+  @ApiProperty({ description: 'Shipping ZIP code', required: false })
+  @IsString()
+  @IsOptional()
+  shippingZipCode?: string;
+
+  @ApiProperty({ description: 'Shipping state', required: false })
+  @IsString()
+  @IsOptional()
+  shippingState?: string;
+
+  @ApiProperty({ description: 'Recipient phone number', required: false })
+  @IsString()
+  @IsOptional()
+  recipientPhone?: string;
+
+  @ApiProperty({ description: 'Recipient name', required: false })
+  @IsString()
+  @IsOptional()
+  recipientName?: string;
 }

@@ -63,6 +63,16 @@ export class AuthController {
     return this.authService.getUserById(id);
   }
 
+  @ApiOperation({ summary: 'Get user shipping data' })
+  @Get('shipping-data/:id')
+  @ApiBearerAuth()
+  @Roles(Role.User)
+  @UseGuards(AuthGuard, RolesGuard)
+  async getShippingData(@Param('id') id: string, @Req() req: any) {
+    if (req.user.id !== id && !req.user.isAdmin) throw new UnauthorizedException('No tienes permiso para ver estos datos de envío');
+    return this.authService.getShippingData(id);
+  }
+
   @ApiOperation({ summary: 'Update user profile' })
   @Put('profile/:id')
   @ApiBearerAuth()

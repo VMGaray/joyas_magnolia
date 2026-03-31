@@ -27,6 +27,15 @@ export class Auth {
   @Column({ type: 'varchar', length: 150, nullable: true })
   address: string;
 
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  city: string;
+
+  @Column({ type: 'varchar', length: 20, nullable: true })
+  zipCode: string;
+
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  state: string;
+
   @Column({ type: 'varchar', length: 6, nullable: true })
   resetPasswordCode: string | null;
 
