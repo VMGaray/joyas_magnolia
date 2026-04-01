@@ -244,7 +244,7 @@ export class AuthService {
       tokenVersion: user.tokenVersion,
     };
 
-    const token: string = this.jwtService.sign(payload);
+    const token: string = this.jwtService.sign(payload, { expiresIn: '1d' });
     return token;
   }
 

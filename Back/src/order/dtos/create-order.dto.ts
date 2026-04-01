@@ -1,4 +1,5 @@
-import { IsArray, IsNotEmpty, IsNumber, IsOptional, IsString, IsUUID, ValidateNested } from 'class-validator';
+import { IsArray, IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString, IsUUID, ValidateNested } from 'class-validator';
+import { ShippingMethod } from '../shipping-method.enum';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 
@@ -68,4 +69,15 @@ export class CreateOrderDto {
   @IsString()
   @IsOptional()
   recipientName?: string;
+
+  @ApiProperty({ 
+    description: 'Shipping method', 
+    enum: ShippingMethod, 
+    required: false, 
+    default: ShippingMethod.NACIONAL,
+    example: ShippingMethod.NACIONAL
+  })
+  @IsEnum(ShippingMethod)
+  @IsOptional()
+  shippingMethod?: ShippingMethod;
 }

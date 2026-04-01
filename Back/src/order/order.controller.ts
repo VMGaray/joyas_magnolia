@@ -32,6 +32,12 @@ export class OrderController {
     return this.orderService.findAll();
   }
 
+  @Get('shipping-methods')
+  @ApiOperation({ summary: 'Get available shipping methods' })
+  getShippingMethods() {
+    return this.orderService.getShippingMethods();
+  }
+
   @Get(':id')
   @ApiBearerAuth()
   @Roles(Role.User)

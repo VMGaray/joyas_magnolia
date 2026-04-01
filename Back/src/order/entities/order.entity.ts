@@ -2,6 +2,7 @@ import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, CreateDat
 import { Auth } from '../../auth/entities/auth.entity';
 import { OrderItem } from './order-item.entity';
 import { OrderStatus } from '../order-status.enum';
+import { ShippingMethod } from '../shipping-method.enum';
 
 @Entity({ name: 'orders' })
 export class Order {
@@ -13,6 +14,9 @@ export class Order {
 
   @Column({ type: 'enum', enum: OrderStatus, default: OrderStatus.PENDING })
   status: OrderStatus;
+
+  @Column({ type: 'enum', enum: ShippingMethod, default: ShippingMethod.NACIONAL })
+  shippingMethod: ShippingMethod;
 
   @CreateDateColumn()
   createdAt: Date;

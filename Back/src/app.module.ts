@@ -38,7 +38,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
     }),
     JwtModule.register({
       global: true,
-      signOptions: { expiresIn: '7d' },
+      signOptions: { expiresIn: '30d' },
       secret: process.env.JWT_SECRET,
     }),
     ThrottlerModule.forRoot([{

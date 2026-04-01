@@ -7,6 +7,7 @@ import { Product } from '../products/entities/product.entity';
 import { Auth } from '../auth/entities/auth.entity';
 import { CreateOrderDto } from './dtos/create-order.dto';
 import { OrderStatus } from './order-status.enum';
+import { ShippingMethod } from './shipping-method.enum';
 
 @Injectable()
 export class OrderService {
@@ -30,7 +31,8 @@ export class OrderService {
       shippingZipCode, 
       shippingState, 
       recipientPhone, 
-      recipientName 
+      recipientName,
+      shippingMethod
     } = createOrderDto;
 
     const user = await this.authRepository.findOneBy({ id: userId });
@@ -83,6 +85,7 @@ export class OrderService {
       shippingState: shippingState || user.state,
       recipientPhone: recipientPhone || user.phone?.toString(),
       recipientName: recipientName || user.username,
+      shippingMethod: shippingMethod || ShippingMethod.NACIONAL,
     });
 
     return await this.orderRepository.save(order);
@@ -184,5 +187,9 @@ export class OrderService {
     return await this.orderRepository.find({
       relations: ['user', 'items'],
     });
+  }
+
+  getShippingMethods(): string[] {
+    return Object.values(ShippingMethod);
   }
 }
