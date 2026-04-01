@@ -9,7 +9,8 @@ import {
   MapPin, 
   Phone, 
   User, 
-  CreditCard 
+  CreditCard,
+  Truck // ✅ Agregué Truck
 } from "lucide-react";
 import { notifySuccess, notifyError } from "@/components/helpers/Toast";
 
@@ -19,6 +20,13 @@ const statusLabels: Record<string, string> = {
   SHIPPED: "Enviado",
   DELIVERED: "Entregado",
   CANCELLED: "Cancelado",
+};
+
+// ✅ Etiquetas amigables para los métodos de envío
+const shippingLabels: Record<string, string> = {
+  calamuchita: "Valle de Calamuchita (Gratis)",
+  vgb: "Retiro en Local (VGB)",
+  nacional: "Resto del País (A Coordinar)",
 };
 
 const statusColors: Record<string, string> = {
@@ -136,7 +144,6 @@ export default function ListaPedidos() {
                                   )}
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                  {/* ✅ BUSCAMOS NOMBRE DEL PRODUCTO EN VARIOS NIVELES */}
                                   <p className="text-xs font-black text-gray-700 truncate">
                                     {item.product?.name || item.productName || item.name || `Producto #${item.id?.slice(0,5)}`}
                                   </p>
@@ -157,6 +164,18 @@ export default function ListaPedidos() {
                               <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
                                 <User size={14} /> Datos de Entrega
                               </h4>
+                              
+                              {/* ✅ NUEVO: MÉTODO DE ENVÍO RESALTADO */}
+                              <div className={`mb-4 p-3 rounded-xl border flex items-center gap-3 ${pedido.shippingMethod === 'nacional' ? 'bg-red-50 border-red-100' : 'bg-green-50 border-green-100'}`}>
+                                <Truck size={16} className={pedido.shippingMethod === 'nacional' ? 'text-red-500' : 'text-green-500'} />
+                                <div>
+                                  <p className="text-[9px] uppercase font-black text-gray-400 leading-none mb-1">Método elegido:</p>
+                                  <p className={`text-[11px] font-black uppercase ${pedido.shippingMethod === 'nacional' ? 'text-red-600' : 'text-green-700'}`}>
+                                    {shippingLabels[pedido.shippingMethod] || pedido.shippingMethod || "No especificado"}
+                                  </p>
+                                </div>
+                              </div>
+
                               <div className="space-y-3">
                                 <div className="flex gap-3">
                                   <User size={14} className="text-gray-300 mt-0.5" />
@@ -172,9 +191,14 @@ export default function ListaPedidos() {
                                 </div>
                                 <div className="flex gap-3">
                                   <Phone size={14} className="text-gray-300 mt-0.5" />
-                                  <p className="text-xs font-black text-magnolia-dark">
+                                  <a 
+                                    href={`https://wa.me/${pedido.contactPhone || pedido.user?.phone}?text=Hola!%20Soy%20de%20Magnolia%20Joyas.%20Me%20contacto%20por%20tu%20pedido%20%23${pedido.id.slice(-6).toUpperCase()}`}
+                                    target="_blank"
+                                    className="text-xs font-black text-magnolia-dark hover:text-green-600 transition-colors flex items-center gap-1"
+                                  >
                                     {pedido.contactPhone || pedido.user?.phone || "Sin teléfono"}
-                                  </p>
+                                    <Phone size={10} />
+                                  </a>
                                 </div>
                               </div>
                             </div>
