@@ -136,14 +136,29 @@ export default function Footer() {
 
         </div>
 
-        {/* BARRA INFERIOR */}
-        <div className="border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-gray-500 font-sans text-center md:text-left">
-          <p>&copy; {new Date().getFullYear()} Magnolia Joyas. Todos los derechos reservados.</p>
-          <div className="flex gap-6">
-            <Link href="/privacidad" className="hover:text-white">Política de Privacidad</Link>
-            <Link href="/terminos" className="hover:text-white">Términos y Condiciones</Link>
-          </div>
-        </div>
+      {/* BARRA INFERIOR */}
+<div className="border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-gray-500 font-sans text-center md:text-left">
+  <div className="flex flex-col md:flex-row items-center gap-2 md:gap-4">
+    <p>&copy; {new Date().getFullYear()} Magnolia Joyas. Todos los derechos reservados.</p>
+    <span className="hidden md:inline text-gray-700">|</span>
+    <p className="flex items-center gap-1">
+      Desarrollado por 
+      <a 
+        href="https://www.instagram.com/vmg.setup.ai/" 
+        target="_blank" 
+        rel="noopener noreferrer"
+        className="text-magnolia-lilac font-bold hover:text-white transition-colors tracking-widest"
+      >
+        VMG.setup.ai
+      </a>
+    </p>
+  </div>
+
+  <div className="flex gap-6">
+    <Link href="/privacidad" className="hover:text-white transition-colors">Política de Privacidad</Link>
+    <Link href="/terminos" className="hover:text-white transition-colors">Términos y Condiciones</Link>
+  </div>
+</div>
 
       </div>
     </footer>

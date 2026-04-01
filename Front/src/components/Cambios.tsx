@@ -7,7 +7,7 @@ export default function Cambios() {
     {
       icon: <Clock className="text-magnolia-lilac" size={24} />,
       title: "Plazo de Cambio",
-      desc: "Tenés hasta 30 días corridos desde que recibiste tu joya para solicitar un cambio."
+      desc: "Tenés hasta 7 días corridos desde que recibiste tu joya para solicitar un cambio."
     },
     {
       icon: <AlertCircle className="text-magnolia-lilac" size={24} />,
@@ -17,7 +17,7 @@ export default function Cambios() {
     {
       icon: <ShieldCheck className="text-magnolia-lilac" size={24} />,
       title: "Garantía",
-      desc: "Nuestras piezas de Plata 925 y Oro tienen garantía de por vida por la calidad del metal."
+      desc: "Nuestras piezas de Plata 925 y Oro tienen garantía por la calidad del metal."
     }
   ];
 
