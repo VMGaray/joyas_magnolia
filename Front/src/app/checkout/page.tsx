@@ -3,7 +3,7 @@
 import { useCart } from "../../context/CartContext";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft, Lock, Tag } from "lucide-react";
+import { ArrowLeft, Lock, Tag, Truck, Info } from "lucide-react"; // Agregué Truck e Info
 import { useState } from "react";
 import MercadoPagoButton from "@/components/MercadoPagoButton";
 
@@ -19,6 +19,15 @@ export default function CheckoutPage() {
     zip: "",
     phone: ""
   });
+
+  // ✅ NUEVO ESTADO PARA EL ENVÍO
+  const [shippingMethod, setShippingMethod] = useState("calamuchita");
+
+  const shippingOptions = [
+    { id: "calamuchita", label: "Valle de Calamuchita", desc: "Envío sin cargo en la zona" },
+    { id: "vgb", label: "Retiro en local (VGB)", desc: "Retirá por el showroom" },
+    { id: "nacional", label: "Resto del país", desc: "A coordinar post-compra" }
+  ];
 
   // --- LÓGICA DE DESCUENTOS ---
   const PROMO_SILVER = 80000;
@@ -98,7 +107,55 @@ export default function CheckoutPage() {
               ))}
             </div>
 
-            <div className="border-t border-gray-100 pt-6 space-y-3 mb-8">
+            {/* ✅ SECCIÓN DE MÉTODO DE ENVÍO */}
+            <div className="mb-8 border-y border-gray-100 py-6">
+              <h3 className="font-serif text-lg text-magnolia-dark mb-4 flex items-center gap-2 uppercase text-xs tracking-widest font-bold">
+                <Truck size={16} className="text-magnolia-lilac" /> 
+                Seleccioná tu envío
+              </h3>
+              
+              <div className="space-y-3">
+                {shippingOptions.map((option) => (
+                  <label 
+                    key={option.id}
+                    className={`flex items-center justify-between p-4 rounded-sm border cursor-pointer transition-all ${
+                      shippingMethod === option.id 
+                      ? "border-magnolia-lilac bg-magnolia-lilac/5 shadow-sm" 
+                      : "border-gray-200 bg-white hover:border-gray-300"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <input 
+                        type="radio" 
+                        name="shipping"
+                        value={option.id}
+                        checked={shippingMethod === option.id}
+                        onChange={() => setShippingMethod(option.id)}
+                        className="w-4 h-4 text-magnolia-lilac focus:ring-magnolia-lilac border-gray-300"
+                      />
+                      <div>
+                        <p className="text-[12px] font-bold text-gray-800 uppercase tracking-tight">{option.label}</p>
+                        <p className="text-[10px] text-gray-400 uppercase tracking-tighter">{option.desc}</p>
+                      </div>
+                    </div>
+                    <span className={`text-[10px] font-black ${option.id === 'nacional' ? 'text-magnolia-dark' : 'text-green-600'}`}>
+                      {option.id === "nacional" ? "A CONVENIR" : "GRATIS"}
+                    </span>
+                  </label>
+                ))}
+              </div>
+
+              {shippingMethod === "nacional" && (
+                <div className="mt-4 p-3 bg-gray-50 border border-dashed border-gray-200 rounded-sm flex items-start gap-2">
+                  <Info size={14} className="text-magnolia-lilac mt-0.5 shrink-0" />
+                  <p className="text-[10px] text-gray-500 leading-relaxed italic">
+                    Para envíos fuera de Calamuchita, nos contactaremos por WhatsApp para pasarte el presupuesto de Correo Argentino y coordinar el pago.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-3 mb-8">
               <div className="flex justify-between text-sm text-gray-500">
                 <span>Subtotal</span>
                 <span>${totalPrice.toLocaleString("es-AR")}</span>
@@ -115,12 +172,14 @@ export default function CheckoutPage() {
                 </div>
               )}
 
-              <div className="flex justify-between text-sm text-gray-500 pb-2">
+              <div className="flex justify-between text-sm text-gray-500 pb-2 border-b border-gray-100">
                 <span>Envío</span>
-                <span className="text-green-600 font-bold uppercase text-[10px]">Sin cargo</span>
+                <span className={`font-bold uppercase text-[10px] ${shippingMethod === 'nacional' ? 'text-magnolia-dark' : 'text-green-600'}`}>
+                  {shippingMethod === 'nacional' ? "A convenir" : "Sin cargo"}
+                </span>
               </div>
 
-              <div className="border-t border-gray-200 pt-4 flex justify-between items-center">
+              <div className="pt-4 flex justify-between items-center">
                 <span className="font-serif text-xl text-magnolia-dark font-black">Total</span>
                 <span className="text-2xl font-black text-magnolia-dark">
                   ${Math.round(finalTotal).toLocaleString("es-AR")}
@@ -128,8 +187,11 @@ export default function CheckoutPage() {
               </div>
             </div>
 
-            {/* ✅ Pasar el finalTotal con descuento a Mercado Pago */}
-            <MercadoPagoButton shippingData={formData} amount={finalTotal} />
+            {/* ✅ El botón ahora recibe también el método de envío si Andre necesita guardarlo */}
+            <MercadoPagoButton 
+              shippingData={{ ...formData, shippingMethod }} 
+              amount={finalTotal} 
+            />
             
             <div className="mt-4 flex items-center justify-center gap-2 text-gray-400">
               <Lock size={12} />

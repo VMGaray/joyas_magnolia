@@ -28,7 +28,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }, [user, loading, router]);
 
   const links = [
-    { href: "/admin", label: "Dashboard", icon: HomeIcon },
+    { href: "/admin", label: "Panel de control", icon: HomeIcon },
     { href: "/admin/productos", label: "Productos", icon: CubeIcon },
     { href: "/admin/pedidos", label: "Pedidos", icon: ClipboardDocumentListIcon },
     { href: "/admin/usuarios", label: "Usuarios", icon: UserGroupIcon },
