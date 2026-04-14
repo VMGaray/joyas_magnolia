@@ -8,6 +8,8 @@ interface RatingFormProps {
   onRatingSubmitted?: () => void; // Opcional: para recargar stats después
 }
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+
 export default function RatingForm({ productId, onRatingSubmitted }: RatingFormProps) {
   const [rating, setRating] = useState(0);
   const [hover, setHover] = useState(0);
@@ -26,7 +28,7 @@ export default function RatingForm({ productId, onRatingSubmitted }: RatingFormP
     setError('');
 
     try {
-      const res = await fetch(`http://localhost:4000/product-ratings/${productId}/rate`, {
+      const res = await fetch(`${API_URL}/product-ratings/${productId}/rate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ rating, comment }),

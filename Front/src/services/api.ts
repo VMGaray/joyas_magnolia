@@ -1,6 +1,6 @@
 import { BackendProduct } from "../types/backend";
 
-const API_URL = "http://localhost:4000"; // El puerto del backend de tu compañera
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
 interface ProductFilters {
   category?: string;
