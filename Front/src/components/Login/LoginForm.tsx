@@ -7,6 +7,8 @@ import { useAuth } from "@/context/AuthContext";
 import { notifyError } from "@/components/helpers/Toast";
 import { WelcomeModal } from "./WelcomeModal";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+
 export const LoginForm = () => {
   const { login } = useAuth();
 
@@ -37,7 +39,7 @@ export const LoginForm = () => {
     setLoading(true);
 
     try {
-      const response = await fetch("http://localhost:4000/auth/login", {
+      const response = await fetch(`${API_URL}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
@@ -115,7 +117,7 @@ export const LoginForm = () => {
     setLoading(true);
 
     try {
-      const response = await fetch("http://localhost:4000/auth/verify-admin-login", {
+      const response = await fetch(`${API_URL}/auth/verify-admin-login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: formData.email, code: adminCode }),

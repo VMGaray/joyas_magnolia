@@ -6,6 +6,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { WelcomeModal } from "../Login/WelcomeModal";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+
 export const RegisterForm = () => {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -47,7 +49,7 @@ export const RegisterForm = () => {
     const fullName = `${formData.firstName} ${formData.lastName}`.trim();
 
     try {
-      const response = await fetch("http://localhost:4000/auth/register", {
+      const response = await fetch(`${API_URL}/auth/register`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -92,7 +94,7 @@ export const RegisterForm = () => {
     setLoading(true);
 
     try {
-      const response = await fetch("http://localhost:4000/auth/verify-registration", {
+      const response = await fetch(`${API_URL}/auth/verify-registration`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

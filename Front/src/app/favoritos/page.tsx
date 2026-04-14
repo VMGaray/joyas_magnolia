@@ -38,10 +38,15 @@ export default function FavoritesPage() {
                   <Heart size={18} fill="currentColor" className="text-red-500" />
                 </button>
 
-                {/* Foto y Link */}
-                <Link href={`/producto/${product.id}`} className="block relative aspect-square w-full bg-gray-50 overflow-hidden mb-4">
-                  <Image src={product.image || product.imageUrl || "/placeholder.jpg"} alt={product.name} fill className="object-cover" />
-                </Link>
+            {/* Foto y Link */}
+<Link href={`/producto/${product.id}`} className="block relative aspect-square w-full bg-gray-50 overflow-hidden mb-4">
+  <Image 
+    src={(product as any).image || (product as any).imageUrl || "/placeholder.jpg"} 
+    alt={product.name} 
+    fill 
+    className="object-cover" 
+  />
+</Link>
 
                 {/* Info */}
                 <div className="text-center space-y-2">

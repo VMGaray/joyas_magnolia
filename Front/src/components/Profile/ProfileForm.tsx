@@ -51,7 +51,8 @@ export const ProfileForm = ({ userData, onSaved }: ProfileFormProps) => {
         zip: form.zip    // ✅ Ya no necesita el ignore
       };
 
-      const res = await fetch(`http://localhost:4000/auth/profile/${userId}`, {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+      const res = await fetch(`${API_URL}/auth/profile/${userId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
