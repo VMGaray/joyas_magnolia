@@ -3,13 +3,13 @@ FROM node:22-alpine AS development
 
 WORKDIR /app
 
-COPY package*.json ./
-COPY tsconfig.json ./
-COPY nest-cli.json ./
+COPY Back/package*.json ./
+COPY Back/tsconfig.json ./
+COPY Back/nest-cli.json ./
 
 RUN npm install
 
-COPY . .
+COPY Back/ .
 
 RUN npm run build
 
@@ -17,7 +17,7 @@ FROM node:22-alpine AS production
 
 WORKDIR /app
 
-COPY package*.json ./
+COPY Back/package*.json ./
 
 RUN npm install --only=production
 
