@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, MoreThan, ILike } from 'typeorm';
 import * as bcrypt from 'bcrypt';
@@ -24,8 +24,10 @@ export class AuthService {
     const userFound: Auth | null = await this.authRepository.findOne({
       where: { email: user.email },
     });
-    if (userFound)
+
+    if (userFound && userFound.isVerified) {
       throw new BadRequestException('Usuario registrado anteriormente');
+    }
 
     if (user.password !== user.password2)
       throw new BadRequestException('Ambas constraseñas deben ser iguales');
@@ -36,18 +38,39 @@ export class AuthService {
     const expires = new Date();
     expires.setMinutes(expires.getMinutes() + 15);
 
-    const newUser: Auth = await this.authRepository.save({
-      username: user.username,
-      email: user.email,
-      password: hashPassword,
-      phone: user.phone,
-      address: user.address,
-      isVerified: false,
-      registrationCode: code,
-      registrationExpires: expires,
-    });
+    if (userFound) {
+      // Si el usuario existe pero no está verificado, actualizamos sus datos y generamos nuevo código
+      await this.authRepository.update(userFound.id, {
+        username: user.username,
+        password: hashPassword,
+        phone: user.phone,
+        address: user.address,
+        registrationCode: code,
+        registrationExpires: expires,
+      });
+    } else {
+      // Registro nuevo
+      await this.authRepository.save({
+        username: user.username,
+        email: user.email,
+        password: hashPassword,
+        phone: user.phone,
+        address: user.address,
+        isVerified: false,
+        registrationCode: code,
+        registrationExpires: expires,
+      });
+    }
 
-    await this.mailService.sendRegistrationCode(user.email, code);
+    try {
+      await this.mailService.sendRegistrationCode(user.email, code);
+    } catch (error) {
+      // Lanzamos una excepción informativa pero el usuario ya queda guardado en la DB 
+      // para que pueda re-intentar el registro y recibir un nuevo código.
+      throw new InternalServerErrorException(
+        'Te has registrado con éxito, pero hubo un problema al enviar el correo. Por favor, intenta "registrarte" nuevamente con el mismo correo para reenviar el código de verificación.'
+      );
+    }
 
     return { message: 'Por favor, verifica tu correo. Te hemos enviado un código.', email: user.email };
   }
