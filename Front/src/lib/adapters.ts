@@ -33,6 +33,7 @@ export function formatPrice(price: number): string {
 function categoryToMaterial(categoryName: string): string {
   const mapping: Record<string, string> = {
     'Plata 925': 'plata-925',
+    'Oro 18k': 'oro-18kl',
     'Oro 18 k': 'oro-18kl',
     'Enchapados': 'enchapado',
     'Insumos': 'insumos',

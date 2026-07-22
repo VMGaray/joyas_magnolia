@@ -82,7 +82,10 @@ export default function ListaProductos() {
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
         <ProductTable
           products={products}
-          onEdit={setEditingProduct}
+          onEdit={(adaptedProduct: any) => {
+            const rawProduct = backendProducts?.find((p: any) => String(p.id) === String(adaptedProduct.id));
+            setEditingProduct(rawProduct || adaptedProduct);
+          }}
           onDelete={confirmDelete}
         />
       </div>

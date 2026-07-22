@@ -49,14 +49,21 @@ const defaultValues: FormData = {
 };
 
 export default function ProductForm({ initialValues, onSubmit, onCancel }: ProductFormProps) {
+  const getInitialStringValue = (val: any) => {
+    if (!val) return "";
+    if (typeof val === 'string') return val;
+    if (typeof val === 'object' && val.name) return val.name;
+    return "";
+  };
+
   const [formData, setFormData] = useState<FormData>({
     name: initialValues?.name || "",
     description: initialValues?.description || "",
     // ✅ SENIOR: Tomamos el precio tal cual viene del Backend (sin * 1000)
     price: initialValues?.price ? Number(initialValues.price) : "",
     stock: initialValues?.stock || "",
-    category: initialValues?.category || "",
-    productType: initialValues?.productType || "",
+    category: getInitialStringValue(initialValues?.category),
+    productType: getInitialStringValue(initialValues?.productType),
     rings_subtype: initialValues?.rings_subtype || "",
     earrings_subtype: initialValues?.earrings_subtype || "",
     chains_subtype: initialValues?.chains_subtype || "",

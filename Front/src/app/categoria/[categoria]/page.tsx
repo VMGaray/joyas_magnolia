@@ -41,13 +41,42 @@ export default async function CategoriaPage({ params }: { params: Promise<{ cate
   const products = allProducts.filter(p => {
     const searchSlug = slug.toLowerCase();
     
-    const typeSlug = (p.productType || "").toLowerCase().replace(/\s+/g, '-');
-    const catSlug = (p.category || "").toLowerCase().replace(/\s+/g, '-');
-    const matSlug = (p.material || "").toLowerCase().replace(/\s+/g, '-');
+    // Obtener strings para categoría y tipo de producto (ya que pueden venir como objetos o enums)
+    const categoryName = typeof p.category === 'string' ? p.category : (p.category as any)?.name || "";
+    const typeName = typeof p.productType === 'string' ? p.productType : (p.productType as any)?.name || "";
 
+    const typeSlug = typeName.toLowerCase().replace(/\s+/g, '-');
+    
+    // Coincidencia con tipo de producto (anillos, aros, etc.)
     if (typeSlug === searchSlug) return true;
-    if (catSlug === searchSlug || matSlug === searchSlug) return true;
-    if (searchSlug.includes("oro-18") && matSlug.includes("oro-18")) return true;
+
+    // Coincidencia con metal/categoría (soporta singular/plural y discrepancias de nombres)
+    const slugToCategoryMap: Record<string, string[]> = {
+      'plata-925': ['plata 925'],
+      'oro-18k': ['oro 18k'],
+      'oro-18kl': ['oro 18k'],
+      'enchapado': ['enchapados'],
+      'enchapados': ['enchapados'],
+      'personalizados': ['personalizados'],
+      'insumos': ['insumos']
+    };
+
+    const targetCategories = slugToCategoryMap[searchSlug] || [searchSlug];
+    const isCategoryMatch = targetCategories.some(
+      cat => cat.toLowerCase() === categoryName.toLowerCase()
+    );
+
+    if (isCategoryMatch) return true;
+
+    // Fallback por compatibilidad con material si el backend o datos locales lo proveen
+    const materialName = typeof (p as any).material === 'string' ? (p as any).material : "";
+    const matSlug = materialName.toLowerCase().replace(/\s+/g, '-');
+    if (matSlug === searchSlug) return true;
+
+    // Caso especial para Oro 18k / Oro 18kl
+    if (searchSlug.includes("oro-18") && (categoryName.toLowerCase().includes("oro-18") || materialName.toLowerCase().includes("oro-18"))) {
+      return true;
+    }
 
     return false;
   });

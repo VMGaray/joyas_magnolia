@@ -63,7 +63,9 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
 
   if (!product) notFound();
 
-  const displayCategory = product.category?.name || product.productType?.name || "Joyas";
+  const categoryName = typeof product.category === 'string' ? product.category : product.category?.name;
+  const productTypeName = typeof product.productType === 'string' ? product.productType : product.productType?.name;
+  const displayCategory = categoryName || productTypeName || "Joyas";
 
   const formattedProduct = {
     ...product,
