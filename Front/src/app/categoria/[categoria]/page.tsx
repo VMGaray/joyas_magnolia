@@ -14,7 +14,12 @@ interface Product {
   imageUrl: string | null;
   productType: string;
   category?: string;
-  material?: string; 
+  material?: string;
+  rings_subtype?: string | null;
+  earrings_subtype?: string | null;
+  chains_subtype?: string | null;
+  bracelets_subtype?: string | null;
+  pendants_subtype?: string | null;
 }
 
 async function getAllProducts(): Promise<Product[]> {
@@ -32,25 +37,29 @@ async function getAllProducts(): Promise<Product[]> {
   }
 }
 
-export default async function CategoriaPage({ params }: { params: Promise<{ categoria: string }> }) {
+export default async function CategoriaPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ categoria: string }>;
+  searchParams: Promise<{ type?: string; subtype?: string }>;
+}) {
   const resolvedParams = await params;
-  const slug = resolvedParams.categoria; 
+  const slug = resolvedParams.categoria;
+  const { type: typeFilter, subtype: subtypeFilter } = await searchParams;
 
   const allProducts = await getAllProducts();
 
   const products = allProducts.filter(p => {
     const searchSlug = slug.toLowerCase();
-    
+
     // Obtener strings para categoría y tipo de producto (ya que pueden venir como objetos o enums)
     const categoryName = typeof p.category === 'string' ? p.category : (p.category as any)?.name || "";
     const typeName = typeof p.productType === 'string' ? p.productType : (p.productType as any)?.name || "";
 
     const typeSlug = typeName.toLowerCase().replace(/\s+/g, '-');
-    
-    // Coincidencia con tipo de producto (anillos, aros, etc.)
-    if (typeSlug === searchSlug) return true;
 
-    // Coincidencia con metal/categoría (soporta singular/plural y discrepancias de nombres)
+    // Coincidencia con tipo de producto (anillos, aros, etc.) o con metal/categoría
     const slugToCategoryMap: Record<string, string[]> = {
       'plata-925': ['plata 925'],
       'oro-18k': ['oro 18k'],
@@ -66,22 +75,44 @@ export default async function CategoriaPage({ params }: { params: Promise<{ cate
       cat => cat.toLowerCase() === categoryName.toLowerCase()
     );
 
-    if (isCategoryMatch) return true;
-
     // Fallback por compatibilidad con material si el backend o datos locales lo proveen
     const materialName = typeof (p as any).material === 'string' ? (p as any).material : "";
     const matSlug = materialName.toLowerCase().replace(/\s+/g, '-');
-    if (matSlug === searchSlug) return true;
 
-    // Caso especial para Oro 18k / Oro 18kl
-    if (searchSlug.includes("oro-18") && (categoryName.toLowerCase().includes("oro-18") || materialName.toLowerCase().includes("oro-18"))) {
-      return true;
+    const isBaseMatch =
+      typeSlug === searchSlug ||
+      isCategoryMatch ||
+      matSlug === searchSlug ||
+      // Caso especial para Oro 18k / Oro 18kl
+      (searchSlug.includes("oro-18") && (categoryName.toLowerCase().includes("oro-18") || materialName.toLowerCase().includes("oro-18")));
+
+    if (!isBaseMatch) return false;
+
+    // Filtro adicional por tipo de producto (query param ?type=), aplicado cuando el slug es el metal
+    if (typeFilter && typeName.toLowerCase() !== typeFilter.toLowerCase()) {
+      return false;
     }
 
-    return false;
+    // Filtro adicional por subtipo (query param ?subtype=): coincide en cualquiera de las columnas de subtipo
+    if (subtypeFilter) {
+      const subtypes = [
+        p.rings_subtype,
+        p.earrings_subtype,
+        p.chains_subtype,
+        p.bracelets_subtype,
+        p.pendants_subtype,
+      ];
+      const hasSubtype = subtypes.some(
+        (s) => typeof s === 'string' && s.toLowerCase() === subtypeFilter.toLowerCase()
+      );
+      if (!hasSubtype) return false;
+    }
+
+    return true;
   });
 
-  const titulo = slug.charAt(0).toUpperCase() + slug.slice(1).replace(/-/g, ' ');
+  const tituloBase = slug.charAt(0).toUpperCase() + slug.slice(1).replace(/-/g, ' ');
+  const titulo = [tituloBase, typeFilter, subtypeFilter].filter(Boolean).join(' · ');
 
   return (
     <main className="min-h-screen bg-white py-12">
