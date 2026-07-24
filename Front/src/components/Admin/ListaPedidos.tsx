@@ -191,9 +191,10 @@ export default function ListaPedidos() {
                                 </div>
                                 <div className="flex gap-3">
                                   <Phone size={14} className="text-gray-300 mt-0.5" />
-                                  <a 
+                                  <a
                                     href={`https://wa.me/${pedido.contactPhone || pedido.user?.phone}?text=Hola!%20Soy%20de%20Magnolia%20Joyas.%20Me%20contacto%20por%20tu%20pedido%20%23${pedido.id.slice(-6).toUpperCase()}`}
                                     target="_blank"
+                                    rel="noopener noreferrer"
                                     className="text-xs font-black text-magnolia-dark hover:text-green-600 transition-colors flex items-center gap-1"
                                   >
                                     {pedido.contactPhone || pedido.user?.phone || "Sin teléfono"}

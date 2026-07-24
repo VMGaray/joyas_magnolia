@@ -96,8 +96,10 @@ export default function Cambios() {
 
         {/* CTA FINAL */}
         <div className="mt-16 text-center">
-          <a 
-            href="https://wa.me/5493546567106" 
+          <a
+            href="https://wa.me/5493546567106"
+            target="_blank"
+            rel="noopener noreferrer"
             className="inline-flex items-center gap-3 bg-magnolia-dark text-white px-8 py-4 rounded-full text-xs font-black uppercase tracking-widest hover:bg-magnolia-lilac transition-all"
           >
             <MessageCircle size={16} /> Iniciar un cambio por WhatsApp
