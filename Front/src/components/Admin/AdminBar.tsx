@@ -15,7 +15,7 @@ export default function AdminBar() {
         <div className="flex items-center gap-2 px-3 py-1 bg-magnolia-lilac/10 rounded-full border border-magnolia-lilac/20">
           <UserCircle size={14} className="text-magnolia-lilac" />
           <span className="text-[10px] uppercase tracking-[0.2em] font-bold text-magnolia-lilac">
-            Admin: {user.username || "Victoria"}
+            Admin: {user.username || user.email || "Admin"}
           </span>
         </div>
       </div>
