@@ -184,7 +184,7 @@ export default function Navbar() {
         <nav className="relative w-full hidden md:block">
           <ul className="flex flex-wrap justify-center items-center gap-6 md:gap-8 text-sm font-sans text-gray-600 font-medium tracking-wide">
             {MENU_ITEMS.map((item) => (
-              <li key={item.title} className="group relative py-4">
+              <li key={item.title} className="group py-4">
                 <Link
                   href={item.href}
                   className="hover:text-magnolia-lilac transition-colors uppercase text-[10px] md:text-xs flex items-center gap-1"
@@ -196,8 +196,8 @@ export default function Navbar() {
                 </Link>
 
                 {item.sections && item.sections.length > 0 && (
-                  <div className="invisible opacity-0 translate-y-1 group-hover:visible group-hover:opacity-100 group-hover:translate-y-0 group-focus-within:visible group-focus-within:opacity-100 group-focus-within:translate-y-0 transition-all duration-200 absolute left-1/2 -translate-x-1/2 top-full pt-3 z-50">
-                    <div className="bg-white border border-gray-100 shadow-xl rounded-sm p-6 w-max max-w-[92vw]">
+                  <div className="invisible opacity-0 translate-y-1 group-hover:visible group-hover:opacity-100 group-hover:translate-y-0 group-focus-within:visible group-focus-within:opacity-100 group-focus-within:translate-y-0 transition-all duration-200 absolute inset-x-0 top-full pt-3 z-50 flex justify-center px-4">
+                    <div className="bg-white border border-gray-100 shadow-xl rounded-sm p-6 max-w-4xl">
                       <div className="flex flex-wrap gap-x-10 gap-y-6 justify-center">
                         {item.sections.map((section) => (
                           <div key={section.value} className="min-w-[150px] max-w-[190px]">
