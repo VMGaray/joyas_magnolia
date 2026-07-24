@@ -2,14 +2,21 @@
 
 import ProductForm from "./ProductForm";
 import { useProducts } from "@/lib/hooks";
+import type { BackendProduct } from "@/lib/api";
 
 export default function CrearProducto() {
   const { mutate } = useProducts();
 
-  // 'values' aquí ya es el producto guardado que devuelve el backend
-  async function handleSuccess() {
-    await mutate(); // Refresca la lista de productos
-    // El alert ya lo hace el ProductForm internamente, no hace falta aquí.
+  // 'newProduct' es el producto guardado que devuelve el backend (POST 201)
+  async function handleSuccess(newProduct: BackendProduct) {
+    // Actualizamos el caché de SWR al instante con el producto recién creado
+    // (mismo key 'products' que usa ListaProductos, así que se ve sin refrescar)
+    // y revalidamos contra el backend para reconciliar datos derivados en el
+    // servidor (p.ej. la imageUrl, que se sube en un PUT separado después del POST).
+    await mutate(
+      (current) => (Array.isArray(current) ? [...current, newProduct] : [newProduct]),
+      { revalidate: true }
+    );
   }
 
   return (
