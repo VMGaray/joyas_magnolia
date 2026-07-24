@@ -19,6 +19,9 @@ const config = {
   logging: ['error'],
   entities: [__filename.endsWith('.js') ? 'dist/**/*.entity.js' : 'src/**/*.entity.ts'],
   migrations: [__filename.endsWith('.js') ? 'dist/migrations/*.js' : 'src/migrations/*.ts'],
+  // Corre las migraciones pendientes automaticamente al levantar la app en
+  // produccion, sin depender de que el Start Command de Render las invoque.
+  migrationsRun: process.env.NODE_ENV === 'production',
   extra: {
     ssl:
       process.env.NODE_ENV === 'production'
