@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany, CreateDateColumn } from 'typeorm';
 import { BraceletsSubtypes, Category, ChainsSubtypes, EarringsSubtypes, PendantsSubtypes, ProductType, RingsSubtypes } from '../clasification.enum';
 import { ProductRating } from 'src/product-ratings/entities/product-rating.entity';
 
@@ -57,4 +57,7 @@ export class Product {
 
   @Column('simple-array', { nullable: true })
   tags: string[];
+
+  @CreateDateColumn()
+  createdAt: Date;
 }

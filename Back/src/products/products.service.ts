@@ -72,8 +72,8 @@ export class ProductsService {
 
   async findAll(filters: FilterProductsDto) {
     const page = filters.page ?? 1;
-    const limit = filters.limit ?? 10;
-    const skip = (page - 1) * limit;
+    // Sin límite explícito no recortamos el catálogo: se devuelven todos los productos.
+    const limit = filters.limit;
 
     const qb = this.productRepository.createQueryBuilder('product');
 
@@ -108,14 +108,21 @@ export class ProductsService {
       );
     }
 
-    const [data, total] = await qb.skip(skip).take(limit).getManyAndCount();
+    // Las joyas más nuevas siempre arriba.
+    qb.orderBy('product.createdAt', 'DESC');
+
+    if (limit) {
+      qb.skip((page - 1) * limit).take(limit);
+    }
+
+    const [data, total] = await qb.getManyAndCount();
 
     return {
       data,
       total,
       page,
-      limit,
-      totalPages: Math.ceil(total / limit),
+      limit: limit ?? total,
+      totalPages: limit ? Math.ceil(total / limit) : 1,
     };
   }
 

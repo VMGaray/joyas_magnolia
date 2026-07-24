@@ -46,26 +46,24 @@ export class FilterProductsDto {
   tags?: string[];
 
   @ApiProperty({
-    description: 'Número de página',
+    description: 'Número de página. Si no se envía, se devuelven todos los productos sin paginar.',
     example: 1,
     required: false,
-    default: 1,
   })
   @IsOptional()
   @Type(() => Number)
   @IsPositive()
   @Min(1)
-  page?: number = 1;
+  page?: number;
 
   @ApiProperty({
-    description: 'Cantidad de productos por página',
+    description: 'Cantidad de productos por página. Si no se envía, no se aplica límite (se devuelven todos los productos).',
     example: 10,
     required: false,
-    default: 10,
   })
   @IsOptional()
   @Type(() => Number)
   @IsPositive()
   @Min(1)
-  limit?: number = 10;
+  limit?: number;
 }
