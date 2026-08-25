@@ -141,17 +141,33 @@ export default function ProductForm({ initialValues, onSubmit, onCancel }: Produ
         body: JSON.stringify(productData),
       });
 
-      if (!res.ok) throw new Error("Error al guardar producto");
+      if (!res.ok) {
+        const errorBody = await res.json().catch(() => null);
+        const backendMessage = Array.isArray(errorBody?.message)
+          ? errorBody.message.join(", ")
+          : errorBody?.message;
+        throw new Error(backendMessage || `Error al guardar producto (HTTP ${res.status})`);
+      }
       const savedProduct = await res.json();
 
       if (file && savedProduct.id) {
         const imgForm = new FormData();
         imgForm.append("file", file);
-        await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products/${savedProduct.id}/image`, {
+        const imgRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products/${savedProduct.id}/image`, {
           method: "PUT",
           headers: { Authorization: `Bearer ${token}` },
           body: imgForm,
         });
+
+        if (!imgRes.ok) {
+          const errorBody = await imgRes.json().catch(() => null);
+          const backendMessage = Array.isArray(errorBody?.message)
+            ? errorBody.message.join(", ")
+            : errorBody?.message;
+          throw new Error(
+            backendMessage || `El producto se creó, pero falló la subida de la imagen (HTTP ${imgRes.status})`
+          );
+        }
       }
 
       notifySuccess(isEditing ? "¡Pieza actualizada!" : "¡Nueva joya creada!");
