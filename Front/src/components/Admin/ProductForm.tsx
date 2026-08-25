@@ -9,6 +9,7 @@ import {
 } from "@/lib/classification.enum";
 import { Loader2, Tag, Check, Star } from "lucide-react";
 import { notifySuccess, notifyError } from "@/components/helpers/Toast";
+import { compressImage } from "@/lib/compressImage";
 
 interface FormData {
   name: string;
@@ -77,6 +78,7 @@ export default function ProductForm({ initialValues, onSubmit, onCancel }: Produ
   const [preview, setPreview] = useState<string | null>(initialValues?.imageUrl || null);
   const [subtypes, setSubtypes] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
+  const [processingImage, setProcessingImage] = useState(false);
 
   const commonTags = ["destacado", "promo", "nueva colección", "sale"];
 
@@ -104,11 +106,21 @@ export default function ProductForm({ initialValues, onSubmit, onCancel }: Produ
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0] || null;
-    if (selectedFile) {
-      setFile(selectedFile);
-      setPreview(URL.createObjectURL(selectedFile));
+    if (!selectedFile) return;
+
+    // Redimensiona/comprime en el navegador antes de guardarla en el estado.
+    // Fotos de cámara (Mac/iPhone vía app Fotos, en particular) suelen venir
+    // a resolución original y pesar varios MB; esto evita que lleguen así
+    // de pesadas a la subida (Cloudinary, timeouts, etc.).
+    setProcessingImage(true);
+    try {
+      const optimizedFile = await compressImage(selectedFile);
+      setFile(optimizedFile);
+      setPreview(URL.createObjectURL(optimizedFile));
+    } finally {
+      setProcessingImage(false);
     }
   };
 
@@ -141,17 +153,33 @@ export default function ProductForm({ initialValues, onSubmit, onCancel }: Produ
         body: JSON.stringify(productData),
       });
 
-      if (!res.ok) throw new Error("Error al guardar producto");
+      if (!res.ok) {
+        const errorBody = await res.json().catch(() => null);
+        const backendMessage = Array.isArray(errorBody?.message)
+          ? errorBody.message.join(", ")
+          : errorBody?.message;
+        throw new Error(backendMessage || `Error al guardar producto (HTTP ${res.status})`);
+      }
       const savedProduct = await res.json();
 
       if (file && savedProduct.id) {
         const imgForm = new FormData();
         imgForm.append("file", file);
-        await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products/${savedProduct.id}/image`, {
+        const imgRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products/${savedProduct.id}/image`, {
           method: "PUT",
           headers: { Authorization: `Bearer ${token}` },
           body: imgForm,
         });
+
+        if (!imgRes.ok) {
+          const errorBody = await imgRes.json().catch(() => null);
+          const backendMessage = Array.isArray(errorBody?.message)
+            ? errorBody.message.join(", ")
+            : errorBody?.message;
+          throw new Error(
+            backendMessage || `El producto se creó, pero falló la subida de la imagen (HTTP ${imgRes.status})`
+          );
+        }
       }
 
       notifySuccess(isEditing ? "¡Pieza actualizada!" : "¡Nueva joya creada!");
@@ -284,12 +312,19 @@ export default function ProductForm({ initialValues, onSubmit, onCancel }: Produ
         <div className="relative w-24 h-24 bg-gray-50 rounded-lg border border-dashed border-gray-200 flex items-center justify-center overflow-hidden">
           {preview ? <Image src={preview} alt="Preview" fill className="object-cover" /> : <span className="text-[8px] text-gray-400 uppercase">Sin imagen</span>}
         </div>
-        <input type="file" accept="image/*" onChange={handleFileChange} className="text-[10px] text-gray-400" />
+        <div className="flex flex-col gap-1">
+          <input type="file" accept="image/*" onChange={handleFileChange} disabled={processingImage} className="text-[10px] text-gray-400" />
+          {processingImage && (
+            <span className="text-[9px] text-gray-400 flex items-center gap-1">
+              <Loader2 className="animate-spin" size={10} /> Optimizando imagen...
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="md:col-span-2 flex justify-end gap-4 pt-6">
         {onCancel && <button type="button" onClick={onCancel} className="text-[10px] font-bold uppercase text-gray-400">Cancelar</button>}
-        <button type="submit" disabled={loading} className="bg-magnolia-dark text-white px-10 py-3 text-[10px] font-bold uppercase tracking-widest hover:bg-magnolia-lilac transition-all">
+        <button type="submit" disabled={loading || processingImage} className="bg-magnolia-dark text-white px-10 py-3 text-[10px] font-bold uppercase tracking-widest hover:bg-magnolia-lilac transition-all">
           {loading ? <Loader2 className="animate-spin" size={16} /> : "Guardar Joya"}
         </button>
       </div>
