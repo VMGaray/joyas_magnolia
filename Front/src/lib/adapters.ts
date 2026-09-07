@@ -16,6 +16,7 @@ export interface FrontendProduct {
   stock: number;
   tags: string[];
   isFeatured: boolean;
+  size: string;
 }
 
 function toSlug(text: string): string {
@@ -89,7 +90,8 @@ export function adaptBackendProduct(backendProduct: BackendProduct): FrontendPro
     images: gallery.length > 0 ? gallery : [image],
     stock: typeof backendProduct.stock === "number" ? backendProduct.stock : 0,
     tags: productTags,
-    isFeatured: productTags.includes("destacado") || productTags.includes("Destacado"), 
+    isFeatured: productTags.includes("destacado") || productTags.includes("Destacado"),
+    size: typeof (backendProduct as any).size === "string" ? (backendProduct as any).size : "",
   };
 }
 

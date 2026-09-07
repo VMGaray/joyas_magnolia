@@ -37,6 +37,9 @@ export class Product {
   @Column('simple-array', { nullable: true })
   images: string[]; // Todas las fotos del producto, la primera es la portada.
 
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  size: string | null; // Medida/talle en texto libre (ej: "16, 18, 20" o "40-45 cm").
+
   @Column({ type: 'enum', enum: Category })
   category: Category;
 
