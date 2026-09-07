@@ -32,7 +32,10 @@ export class Product {
   ratings: ProductRating[];
 
   @Column({ type: 'text', nullable: true })
-  imageUrl: string | null;
+  imageUrl: string | null; // Portada del producto (= images[0]). Se mantiene por compatibilidad.
+
+  @Column('simple-array', { nullable: true })
+  images: string[]; // Todas las fotos del producto, la primera es la portada.
 
   @Column({ type: 'enum', enum: Category })
   category: Category;

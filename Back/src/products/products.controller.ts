@@ -10,8 +10,9 @@ import {
   Param,
   UseInterceptors,
   UploadedFile,
+  UploadedFiles,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import {
   ApiTags,
   ApiOperation,
@@ -22,7 +23,7 @@ import {
   ApiConsumes,
   ApiParam,
 } from '@nestjs/swagger';
-import { ProductsService } from './products.service';
+import { ProductsService, MAX_PRODUCT_IMAGES } from './products.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { FilterProductsDto } from './dto/filter-products.dto';
@@ -170,6 +171,66 @@ export class ProductsController {
     @UploadedFile() file: Express.Multer.File,
   ) {
     return this.productsService.uploadImageProduct(file, id);
+  }
+
+  @Post(':id/images')
+  @ApiBearerAuth()
+  @Roles(Role.Admin)
+  @UseGuards(AuthGuard, RolesGuard)
+  @UseInterceptors(FilesInterceptor('files', MAX_PRODUCT_IMAGES))
+  @ApiOperation({ summary: 'Agregar una o varias fotos a la galería de un producto' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        files: {
+          type: 'array',
+          items: { type: 'string', format: 'binary' },
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 201, description: 'Fotos agregadas exitosamente' })
+  @ApiResponse({ status: 400, description: 'Se superó el máximo de fotos permitidas' })
+  @ApiResponse({ status: 404, description: 'Producto no encontrado' })
+  uploadImages(
+    @Param('id') id: string,
+    @UploadedFiles() files: Express.Multer.File[],
+  ) {
+    return this.productsService.addImagesToProduct(files, id);
+  }
+
+  @Patch(':id/images/cover')
+  @ApiBearerAuth()
+  @Roles(Role.Admin)
+  @UseGuards(AuthGuard, RolesGuard)
+  @ApiOperation({ summary: 'Elegir cuál foto es la portada del producto' })
+  @ApiQuery({
+    name: 'imgUrl',
+    required: true,
+    description: 'URL de la foto (ya cargada) que pasa a ser portada',
+  })
+  @ApiResponse({ status: 200, description: 'Portada actualizada' })
+  @ApiResponse({ status: 404, description: 'Producto no encontrado' })
+  setCover(@Param('id') id: string, @Query('imgUrl') imgUrl: string) {
+    return this.productsService.setCoverImage(id, imgUrl);
+  }
+
+  @Delete(':id/images')
+  @ApiBearerAuth()
+  @Roles(Role.Admin)
+  @UseGuards(AuthGuard, RolesGuard)
+  @ApiOperation({ summary: 'Eliminar una foto de la galería de un producto' })
+  @ApiQuery({
+    name: 'imgUrl',
+    required: true,
+    description: 'URL de la foto a eliminar',
+  })
+  @ApiResponse({ status: 200, description: 'Foto eliminada exitosamente' })
+  @ApiResponse({ status: 404, description: 'Producto no encontrado' })
+  deleteImageFromGallery(@Param('id') id: string, @Query('imgUrl') imgUrl: string) {
+    return this.productsService.deleteImageProduct(id, imgUrl);
   }
 
   @Delete(':id/image')

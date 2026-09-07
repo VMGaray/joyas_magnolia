@@ -24,6 +24,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
 
   const [product, setProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [activeImage, setActiveImage] = useState(0);
 
   useEffect(() => {
     async function fetchProduct() {
@@ -63,6 +64,13 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
 
   if (!product) notFound();
 
+  // Galería: 'images' del backend, con fallback a la portada única.
+  const gallery: string[] = (Array.isArray(product.images) ? product.images : [])
+    .filter((u: unknown): u is string => typeof u === 'string' && u.trim() !== '');
+  if (gallery.length === 0 && product.imageUrl) gallery.push(product.imageUrl);
+  if (gallery.length === 0) gallery.push('/placeholder.jpg');
+  const currentImage = gallery[activeImage] ?? gallery[0];
+
   const categoryName = typeof product.category === 'string' ? product.category : product.category?.name;
   const productTypeName = typeof product.productType === 'string' ? product.productType : product.productType?.name;
   const displayCategory = categoryName || productTypeName || "Joyas";
@@ -88,14 +96,36 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-20">
-          <div className="relative aspect-square w-full bg-gray-50 overflow-hidden rounded-sm border border-gray-100">
-             <Image 
-               src={formattedProduct.image} 
-               alt={formattedProduct.name}
-               fill
-               className="object-cover"
-               priority
-             />
+          <div className="flex flex-col gap-4">
+            <div className="relative aspect-square w-full bg-gray-50 overflow-hidden rounded-sm border border-gray-100">
+               <Image
+                 src={currentImage}
+                 alt={formattedProduct.name}
+                 fill
+                 className="object-cover"
+                 priority
+               />
+            </div>
+
+            {gallery.length > 1 && (
+              <div className="flex gap-3 flex-wrap">
+                {gallery.map((url, index) => (
+                  <button
+                    key={url}
+                    type="button"
+                    onClick={() => setActiveImage(index)}
+                    className={`relative w-20 h-20 rounded-sm overflow-hidden border transition-all ${
+                      index === activeImage
+                        ? "border-magnolia-dark ring-1 ring-magnolia-dark"
+                        : "border-gray-200 hover:border-magnolia-lilac"
+                    }`}
+                    aria-label={`Ver foto ${index + 1}`}
+                  >
+                    <Image src={url} alt={`${formattedProduct.name} ${index + 1}`} fill className="object-cover" />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="flex flex-col justify-start pt-4">
