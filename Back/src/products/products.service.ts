@@ -2,6 +2,7 @@ import {
   Injectable,
   ConflictException,
   NotFoundException,
+  BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Brackets } from 'typeorm';
@@ -12,6 +13,9 @@ import { FilterProductsDto } from './dto/filter-products.dto';
 import { FileUploadService } from 'src/image-upload/image-upload.service';
 import { BraceletsSubtypes, Category, ChainsSubtypes, EarringsSubtypes, PendantsSubtypes, ProductType, RingsSubtypes } from './clasification.enum';
 
+// Máximo de fotos por producto.
+export const MAX_PRODUCT_IMAGES = 8;
+
 @Injectable()
 export class ProductsService {
   constructor(
@@ -19,6 +23,15 @@ export class ProductsService {
     private productRepository: Repository<Product>,
     private readonly fileUploadService: FileUploadService,
   ) { }
+
+  // Deja imageUrl (portada) siempre igual a la primera foto de la galería.
+  // Guardamos null (no []) cuando no hay fotos: 'simple-array' de TypeORM
+  // devuelve [''] al releer una cadena vacía.
+  private syncCover(product: Product): void {
+    const images = (product.images ?? []).filter((u) => typeof u === 'string' && u.trim() !== '');
+    product.images = images.length > 0 ? images : (null as unknown as string[]);
+    product.imageUrl = images.length > 0 ? images[0] : null;
+  }
 
   async create(createProductDto: CreateProductDto, file?: Express.Multer.File) {
     const { ...productData } = createProductDto;
@@ -38,16 +51,17 @@ export class ProductsService {
       );
     }
 
-    // Subir imagen si se proporciona un archivo
-    let imageUrl: string | null = null;
+    // Subir imagen si se proporciona un archivo (carga en un solo paso).
+    const images: string[] = [];
     if (file) {
-      imageUrl = await this.fileUploadService.uploadImage(file, 'products');
+      images.push(await this.fileUploadService.uploadImage(file, 'products'));
     }
 
     // Crear el producto
     const product = this.productRepository.create({
       ...productData,
-      imageUrl,
+      images: images.length > 0 ? images : (null as unknown as string[]),
+      imageUrl: images[0] ?? null,
     });
 
     return this.productRepository.save(product);
@@ -126,10 +140,11 @@ export class ProductsService {
     };
   }
 
-  async uploadImageProduct(
-    file: Express.Multer.File,
+  // Agrega una o varias fotos a la galería del producto.
+  async addImagesToProduct(
+    files: Express.Multer.File[],
     idProduct: string,
-    folder?: string,
+    folder = 'products',
   ) {
     const productFound: Product | null = await this.productRepository.findOne({
       where: { id: idProduct },
@@ -138,10 +153,35 @@ export class ProductsService {
     if (!productFound) {
       throw new NotFoundException(`Producto con ID ${idProduct} no encontrado`);
     }
-    const imgUrl = await this.fileUploadService.uploadImage(file, folder);
 
-    productFound.imageUrl = imgUrl;
+    if (!files || files.length === 0) {
+      throw new BadRequestException('No se recibió ninguna imagen');
+    }
+
+    const current = productFound.images ?? [];
+    if (current.length + files.length > MAX_PRODUCT_IMAGES) {
+      throw new BadRequestException(
+        `El producto no puede tener más de ${MAX_PRODUCT_IMAGES} fotos (tiene ${current.length})`,
+      );
+    }
+
+    const uploaded: string[] = [];
+    for (const file of files) {
+      uploaded.push(await this.fileUploadService.uploadImage(file, folder));
+    }
+
+    productFound.images = [...current, ...uploaded];
+    this.syncCover(productFound);
     return await this.productRepository.save(productFound);
+  }
+
+  // Compat: subir/actualizar una sola imagen = agregarla a la galería.
+  async uploadImageProduct(
+    file: Express.Multer.File,
+    idProduct: string,
+    folder = 'products',
+  ) {
+    return this.addImagesToProduct([file], idProduct, folder);
   }
 
   async deleteImageProduct(idProduct: string, imgUrl: string) {
@@ -154,7 +194,27 @@ export class ProductsService {
 
     await this.fileUploadService.deleteImageByUrl(imgUrl);
 
-    productFound.imageUrl = null;
+    productFound.images = (productFound.images ?? []).filter((u) => u !== imgUrl);
+    this.syncCover(productFound);
+    return await this.productRepository.save(productFound);
+  }
+
+  // Reordena la galería para que 'imgUrl' quede como portada.
+  async setCoverImage(idProduct: string, imgUrl: string) {
+    const productFound: Product | null = await this.productRepository.findOne({
+      where: { id: idProduct },
+    });
+    if (!productFound) {
+      throw new NotFoundException(`Producto con ID ${idProduct} no encontrado`);
+    }
+
+    const images = productFound.images ?? [];
+    if (!images.includes(imgUrl)) {
+      throw new BadRequestException('Esa foto no pertenece al producto');
+    }
+
+    productFound.images = [imgUrl, ...images.filter((u) => u !== imgUrl)];
+    this.syncCover(productFound);
     return await this.productRepository.save(productFound);
   }
 
@@ -166,9 +226,17 @@ export class ProductsService {
       throw new NotFoundException(`Producto con ID ${idProduct} no encontrado`);
     }
 
-    const imageUrl = productFound.imageUrl;
-    if (imageUrl) {
-      await this.fileUploadService.deleteImageByUrl(imageUrl);
+    // Borra todas las fotos del producto de Cloudinary (galería + portada legacy).
+    const urlsToDelete = new Set<string>([
+      ...(productFound.images ?? []),
+      ...(productFound.imageUrl ? [productFound.imageUrl] : []),
+    ]);
+    for (const url of urlsToDelete) {
+      try {
+        await this.fileUploadService.deleteImageByUrl(url);
+      } catch {
+        // Si una imagen ya no está en Cloudinary, igual seguimos borrando el producto.
+      }
     }
 
     return await this.productRepository.remove(productFound);

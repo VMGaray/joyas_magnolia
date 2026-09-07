@@ -2,14 +2,17 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import { 
-  Category, 
-  ProductType, 
-  getSubtypesForProductType 
+import {
+  Category,
+  ProductType,
+  getSubtypesForProductType
 } from "@/lib/classification.enum";
-import { Loader2, Tag, Check, Star } from "lucide-react";
+import { Loader2, Tag, Check, Star, X } from "lucide-react";
 import { notifySuccess, notifyError } from "@/components/helpers/Toast";
 import { compressImage } from "@/lib/compressImage";
+
+// Máximo de fotos por producto (debe coincidir con el backend).
+const MAX_IMAGES = 8;
 
 interface FormData {
   name: string;
@@ -24,7 +27,12 @@ interface FormData {
   bracelets_subtype: string;
   pendants_subtype: string;
   imageUrl: string;
-  tags: string; 
+  tags: string;
+}
+
+interface PendingImage {
+  file: File;
+  preview: string;
 }
 
 interface ProductFormProps {
@@ -49,6 +57,16 @@ const defaultValues: FormData = {
   tags: "",
 };
 
+function extractGallery(initialValues: any): string[] {
+  if (Array.isArray(initialValues?.images) && initialValues.images.length > 0) {
+    return initialValues.images.filter((u: unknown): u is string => typeof u === "string" && u.trim() !== "");
+  }
+  if (typeof initialValues?.imageUrl === "string" && initialValues.imageUrl.trim() !== "") {
+    return [initialValues.imageUrl];
+  }
+  return [];
+}
+
 export default function ProductForm({ initialValues, onSubmit, onCancel }: ProductFormProps) {
   const getInitialStringValue = (val: any) => {
     if (!val) return "";
@@ -56,6 +74,8 @@ export default function ProductForm({ initialValues, onSubmit, onCancel }: Produ
     if (typeof val === 'object' && val.name) return val.name;
     return "";
   };
+
+  const isEditing = Boolean(initialValues?.id);
 
   const [formData, setFormData] = useState<FormData>({
     name: initialValues?.name || "",
@@ -74,13 +94,19 @@ export default function ProductForm({ initialValues, onSubmit, onCancel }: Produ
     tags: Array.isArray(initialValues?.tags) ? initialValues.tags.join(", ") : "",
   });
 
-  const [file, setFile] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string | null>(initialValues?.imageUrl || null);
+  // Fotos ya cargadas en el producto (solo en edición).
+  const [existingImages, setExistingImages] = useState<string[]>(extractGallery(initialValues));
+  // Fotos nuevas elegidas en este formulario, todavía sin subir.
+  const [pendingImages, setPendingImages] = useState<PendingImage[]>([]);
   const [subtypes, setSubtypes] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [processingImage, setProcessingImage] = useState(false);
+  const [deletingImage, setDeletingImage] = useState<string | null>(null);
 
   const commonTags = ["destacado", "promo", "nueva colección", "sale"];
+
+  const totalImages = existingImages.length + pendingImages.length;
+  const slotsLeft = MAX_IMAGES - totalImages;
 
   useEffect(() => {
     if (formData.productType) {
@@ -106,21 +132,81 @@ export default function ProductForm({ initialValues, onSubmit, onCancel }: Produ
     }
   };
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0] || null;
-    if (!selectedFile) return;
+  const handleFilesChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selected = Array.from(e.target.files ?? []);
+    e.target.value = ""; // permite volver a elegir el mismo archivo
+    if (selected.length === 0) return;
 
-    // Redimensiona/comprime en el navegador antes de guardarla en el estado.
+    if (selected.length > slotsLeft) {
+      notifyError(`Podés agregar hasta ${MAX_IMAGES} fotos por producto (te quedan ${slotsLeft}).`);
+      return;
+    }
+
+    // Redimensiona/comprime en el navegador antes de guardarlas en el estado.
     // Fotos de cámara (Mac/iPhone vía app Fotos, en particular) suelen venir
     // a resolución original y pesar varios MB; esto evita que lleguen así
     // de pesadas a la subida (Cloudinary, timeouts, etc.).
     setProcessingImage(true);
     try {
-      const optimizedFile = await compressImage(selectedFile);
-      setFile(optimizedFile);
-      setPreview(URL.createObjectURL(optimizedFile));
+      const optimized = await Promise.all(selected.map((f) => compressImage(f)));
+      setPendingImages((prev) => [
+        ...prev,
+        ...optimized.map((file) => ({ file, preview: URL.createObjectURL(file) })),
+      ]);
     } finally {
       setProcessingImage(false);
+    }
+  };
+
+  const removePendingImage = (index: number) => {
+    setPendingImages((prev) => {
+      const target = prev[index];
+      if (target) URL.revokeObjectURL(target.preview);
+      return prev.filter((_, i) => i !== index);
+    });
+  };
+
+  // En edición, borrar una foto ya cargada impacta al instante en el backend
+  // (la imagen se maneja aparte de los datos del producto).
+  const removeExistingImage = async (url: string) => {
+    if (!initialValues?.id) return;
+    const token = localStorage.getItem("token");
+    setDeletingImage(url);
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/products/${initialValues.id}/images?imgUrl=${encodeURIComponent(url)}`,
+        { method: "DELETE", headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.message || `No se pudo eliminar la foto (HTTP ${res.status})`);
+      }
+      setExistingImages((prev) => prev.filter((u) => u !== url));
+      notifySuccess("Foto eliminada");
+    } catch (err: any) {
+      notifyError(err.message);
+    } finally {
+      setDeletingImage(null);
+    }
+  };
+
+  const uploadPendingImages = async (productId: string, token: string | null) => {
+    if (pendingImages.length === 0) return;
+    const imgForm = new FormData();
+    pendingImages.forEach(({ file }) => imgForm.append("files", file));
+
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products/${productId}/images`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: imgForm,
+    });
+
+    if (!res.ok) {
+      const body = await res.json().catch(() => null);
+      const backendMessage = Array.isArray(body?.message) ? body.message.join(", ") : body?.message;
+      throw new Error(
+        backendMessage || `El producto se guardó, pero fallaron las fotos (HTTP ${res.status})`
+      );
     }
   };
 
@@ -128,19 +214,18 @@ export default function ProductForm({ initialValues, onSubmit, onCancel }: Produ
     e.preventDefault();
     setLoading(true);
 
-    const isEditing = Boolean(initialValues?.id);
     const token = localStorage.getItem("token");
 
     try {
       // ✅ SENIOR: Mandamos el precio exactamente como se escribió (sin / 1000)
       const productData = {
         ...formData,
-        price: Number(formData.price), 
+        price: Number(formData.price),
         stock: Number(formData.stock),
         tags: formData.tags.split(",").map(t => t.trim().toLowerCase()).filter(t => t !== ""),
       };
 
-      const url = isEditing 
+      const url = isEditing
         ? `${process.env.NEXT_PUBLIC_API_URL}/products/${initialValues?.id}`
         : `${process.env.NEXT_PUBLIC_API_URL}/products`;
 
@@ -162,34 +247,18 @@ export default function ProductForm({ initialValues, onSubmit, onCancel }: Produ
       }
       const savedProduct = await res.json();
 
-      if (file && savedProduct.id) {
-        const imgForm = new FormData();
-        imgForm.append("file", file);
-        const imgRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products/${savedProduct.id}/image`, {
-          method: "PUT",
-          headers: { Authorization: `Bearer ${token}` },
-          body: imgForm,
-        });
-
-        if (!imgRes.ok) {
-          const errorBody = await imgRes.json().catch(() => null);
-          const backendMessage = Array.isArray(errorBody?.message)
-            ? errorBody.message.join(", ")
-            : errorBody?.message;
-          throw new Error(
-            backendMessage || `El producto se creó, pero falló la subida de la imagen (HTTP ${imgRes.status})`
-          );
-        }
+      if (savedProduct.id) {
+        await uploadPendingImages(savedProduct.id, token);
       }
 
       notifySuccess(isEditing ? "¡Pieza actualizada!" : "¡Nueva joya creada!");
-      
+
+      pendingImages.forEach(({ preview }) => URL.revokeObjectURL(preview));
+      setPendingImages([]);
+
       if (!isEditing) {
         setFormData(defaultValues);
-        setPreview(null);
-        setFile(null);
-        const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
-        if (fileInput) fileInput.value = "";
+        setExistingImages([]);
       }
 
       onSubmit(savedProduct);
@@ -202,7 +271,7 @@ export default function ProductForm({ initialValues, onSubmit, onCancel }: Produ
 
   return (
     <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-      
+
       <div className="space-y-2">
         <label className="text-[10px] uppercase tracking-widest font-bold text-gray-400">Nombre de la Joya</label>
         <input type="text" value={formData.name} onChange={(e) => handleChange("name", e.target.value)} required className="w-full border border-gray-200 px-4 py-3 rounded-sm focus:border-magnolia-lilac outline-none" />
@@ -285,8 +354,8 @@ export default function ProductForm({ initialValues, onSubmit, onCancel }: Produ
                 type="button"
                 onClick={() => toggleTag(tag)}
                 className={`px-3 py-1.5 rounded-full text-[10px] font-bold uppercase transition-all flex items-center gap-1 border ${
-                  isActive 
-                    ? "bg-magnolia-dark border-magnolia-dark text-white shadow-md" 
+                  isActive
+                    ? "bg-magnolia-dark border-magnolia-dark text-white shadow-md"
                     : "bg-white border-gray-200 text-gray-400 hover:border-magnolia-lilac"
                 }`}
               >
@@ -298,28 +367,84 @@ export default function ProductForm({ initialValues, onSubmit, onCancel }: Produ
         </div>
 
         <div className="pt-2">
-          <input 
-            type="text" 
+          <input
+            type="text"
             placeholder="Escribí otras etiquetas separadas por coma..."
-            value={formData.tags} 
+            value={formData.tags}
             onChange={(e) => handleChange("tags", e.target.value)}
             className="w-full border-b border-gray-200 bg-transparent px-2 py-2 text-xs outline-none focus:border-magnolia-lilac font-medium text-gray-600"
           />
         </div>
       </div>
 
-      <div className="md:col-span-2 pt-4 border-t border-gray-50 flex items-center gap-6">
-        <div className="relative w-24 h-24 bg-gray-50 rounded-lg border border-dashed border-gray-200 flex items-center justify-center overflow-hidden">
-          {preview ? <Image src={preview} alt="Preview" fill className="object-cover" /> : <span className="text-[8px] text-gray-400 uppercase">Sin imagen</span>}
+      {/* Galería de fotos */}
+      <div className="md:col-span-2 pt-4 border-t border-gray-50 space-y-3">
+        <div className="flex items-center justify-between">
+          <label className="text-[10px] uppercase tracking-widest font-bold text-gray-400">
+            Fotos de la Joya
+          </label>
+          <span className="text-[9px] text-gray-400 font-serif italic">
+            {totalImages}/{MAX_IMAGES} · la primera es la portada
+          </span>
         </div>
-        <div className="flex flex-col gap-1">
-          <input type="file" accept="image/*" onChange={handleFileChange} disabled={processingImage} className="text-[10px] text-gray-400" />
-          {processingImage && (
-            <span className="text-[9px] text-gray-400 flex items-center gap-1">
-              <Loader2 className="animate-spin" size={10} /> Optimizando imagen...
-            </span>
+
+        <div className="flex flex-wrap gap-3">
+          {existingImages.map((url) => (
+            <div key={url} className="relative w-24 h-24 bg-gray-50 rounded-lg border border-gray-200 overflow-hidden group">
+              <Image src={url} alt="Foto del producto" fill className="object-cover" />
+              <button
+                type="button"
+                onClick={() => removeExistingImage(url)}
+                disabled={deletingImage === url}
+                className="absolute top-1 right-1 bg-white/90 hover:bg-red-500 hover:text-white text-gray-500 rounded-full p-1 shadow transition-colors disabled:opacity-50"
+                aria-label="Eliminar foto"
+              >
+                {deletingImage === url ? <Loader2 className="animate-spin" size={12} /> : <X size={12} />}
+              </button>
+            </div>
+          ))}
+
+          {pendingImages.map(({ preview }, index) => (
+            <div key={preview} className="relative w-24 h-24 bg-gray-50 rounded-lg border border-dashed border-magnolia-lilac overflow-hidden">
+              <Image src={preview} alt="Nueva foto" fill className="object-cover" />
+              <span className="absolute bottom-0 inset-x-0 bg-magnolia-dark/70 text-white text-[7px] uppercase tracking-wider text-center py-0.5">
+                Sin subir
+              </span>
+              <button
+                type="button"
+                onClick={() => removePendingImage(index)}
+                className="absolute top-1 right-1 bg-white/90 hover:bg-red-500 hover:text-white text-gray-500 rounded-full p-1 shadow transition-colors"
+                aria-label="Quitar foto"
+              >
+                <X size={12} />
+              </button>
+            </div>
+          ))}
+
+          {slotsLeft > 0 && (
+            <label className="w-24 h-24 flex flex-col items-center justify-center gap-1 bg-gray-50 rounded-lg border border-dashed border-gray-300 cursor-pointer hover:border-magnolia-lilac text-gray-400 hover:text-magnolia-dark transition-colors">
+              <span className="text-2xl leading-none">+</span>
+              <span className="text-[8px] uppercase tracking-wider">Agregar</span>
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handleFilesChange}
+                disabled={processingImage}
+                className="hidden"
+              />
+            </label>
           )}
         </div>
+
+        {processingImage && (
+          <span className="text-[9px] text-gray-400 flex items-center gap-1">
+            <Loader2 className="animate-spin" size={10} /> Optimizando imágenes...
+          </span>
+        )}
+        {slotsLeft <= 0 && (
+          <span className="text-[9px] text-gray-400 italic">Llegaste al máximo de {MAX_IMAGES} fotos.</span>
+        )}
       </div>
 
       <div className="md:col-span-2 flex justify-end gap-4 pt-6">

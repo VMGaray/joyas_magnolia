@@ -44,9 +44,18 @@ function categoryToMaterial(categoryName: string): string {
 
 export function adaptBackendProduct(backendProduct: BackendProduct): FrontendProduct {
   const defaultImage = '/cat-anillos.jpg';
-  const image = backendProduct.imageUrl && !backendProduct.imageUrl.includes('ejemplo.com')
-    ? backendProduct.imageUrl
-    : defaultImage;
+
+  const isUsable = (url: unknown): url is string =>
+    typeof url === 'string' && url.trim() !== '' && !url.includes('ejemplo.com');
+
+  // Galería: usamos 'images' del backend y caemos a 'imageUrl' por compatibilidad.
+  const gallery = (Array.isArray(backendProduct.images) ? backendProduct.images : [])
+    .filter(isUsable);
+  if (gallery.length === 0 && isUsable(backendProduct.imageUrl)) {
+    gallery.push(backendProduct.imageUrl);
+  }
+
+  const image = gallery[0] ?? defaultImage;
 
   /**
    * 💰 LÓGICA DE PRECIOS LIMPIA (Senior):
@@ -77,7 +86,7 @@ export function adaptBackendProduct(backendProduct: BackendProduct): FrontendPro
     description: backendProduct.description || "",
     category: toSlug(productTypeName || 'sin-tipo'),
     material: categoryToMaterial(categoryName || 'sin-categoria'),
-    images: [image],
+    images: gallery.length > 0 ? gallery : [image],
     stock: typeof backendProduct.stock === "number" ? backendProduct.stock : 0,
     tags: productTags,
     isFeatured: productTags.includes("destacado") || productTags.includes("Destacado"), 
