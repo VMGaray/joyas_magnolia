@@ -26,6 +26,7 @@ interface FormData {
   chains_subtype: string;
   bracelets_subtype: string;
   pendants_subtype: string;
+  size: string;
   imageUrl: string;
   tags: string;
 }
@@ -53,6 +54,7 @@ const defaultValues: FormData = {
   chains_subtype: "",
   bracelets_subtype: "",
   pendants_subtype: "",
+  size: "",
   imageUrl: "",
   tags: "",
 };
@@ -90,6 +92,7 @@ export default function ProductForm({ initialValues, onSubmit, onCancel }: Produ
     chains_subtype: initialValues?.chains_subtype || "",
     bracelets_subtype: initialValues?.bracelets_subtype || "",
     pendants_subtype: initialValues?.pendants_subtype || "",
+    size: initialValues?.size || "",
     imageUrl: initialValues?.imageUrl || "",
     tags: Array.isArray(initialValues?.tags) ? initialValues.tags.join(", ") : "",
   });
@@ -222,6 +225,7 @@ export default function ProductForm({ initialValues, onSubmit, onCancel }: Produ
         ...formData,
         price: Number(formData.price),
         stock: Number(formData.stock),
+        size: formData.size.trim(),
         tags: formData.tags.split(",").map(t => t.trim().toLowerCase()).filter(t => t !== ""),
       };
 
@@ -335,6 +339,19 @@ export default function ProductForm({ initialValues, onSubmit, onCancel }: Produ
       <div className="space-y-2">
         <label className="text-[10px] uppercase tracking-widest font-bold text-gray-400">Stock</label>
         <input type="number" value={formData.stock} onChange={(e) => handleChange("stock", e.target.value)} required className="w-full border border-gray-200 px-4 py-3 rounded-sm focus:border-magnolia-lilac outline-none" />
+      </div>
+
+      <div className="md:col-span-2 space-y-2">
+        <label className="text-[10px] uppercase tracking-widest font-bold text-gray-400">
+          Medida / Talle <span className="text-gray-300 normal-case tracking-normal font-normal">(opcional — para anillos, cadenas, pulseras)</span>
+        </label>
+        <input
+          type="text"
+          value={formData.size}
+          onChange={(e) => handleChange("size", e.target.value)}
+          placeholder='Ej: "16, 18, 20" o "40 - 45 - 50 cm"'
+          className="w-full border border-gray-200 px-4 py-3 rounded-sm focus:border-magnolia-lilac outline-none"
+        />
       </div>
 
       <div className="md:col-span-2 space-y-4 p-5 bg-gray-50 rounded-2xl border border-gray-100 shadow-inner">

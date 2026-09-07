@@ -148,6 +148,13 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
               </span>
             </div>
 
+            {typeof formattedProduct.size === "string" && formattedProduct.size.trim() !== "" && (
+              <p className="text-sm text-gray-700 mb-6">
+                <span className="uppercase tracking-wider text-[11px] font-bold text-gray-400 mr-2">Medida</span>
+                {formattedProduct.size}
+              </p>
+            )}
+
             <p className="font-sans text-gray-600 leading-relaxed mb-8 text-sm md:text-base italic">
                 {formattedProduct.description}
             </p>

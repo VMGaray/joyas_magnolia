@@ -26,6 +26,7 @@ export interface BackendProduct {
   stock: number;
   imageUrl?: string | null;
   images?: string[] | null;
+  size?: string | null;
   category?: { id: number; name: string } | null;
   productType?: { id: number; name: string } | null;
   subtype?: { id: number; name: string } | null;

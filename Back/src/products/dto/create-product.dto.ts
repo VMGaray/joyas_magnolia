@@ -103,6 +103,22 @@ export class CreateProductDto {
   pendants_subtype?: PendantsSubtypes;
 
   @ApiProperty({
+    description: 'Medida/talle del producto en texto libre (ej: "16, 18, 20" o "40-45 cm"). Enviar "" para borrarla.',
+    required: false,
+    nullable: true,
+    example: '16, 18, 20',
+  })
+  @IsOptional()
+  // "" (campo vaciado en el admin) => null para limpiar la columna; texto => se recorta.
+  @Transform(({ value }) => {
+    if (typeof value !== 'string') return value;
+    const trimmed = value.trim();
+    return trimmed === '' ? null : trimmed;
+  })
+  @IsString()
+  size?: string | null;
+
+  @ApiProperty({
     type: 'string',
     format: 'binary',
     description: 'Archivo de imagen del producto',
